@@ -57,7 +57,7 @@ struct TrackBriefCard: View {
                 }
             }
             if let footer {
-                Text(footer).font(.prismMeta).foregroundStyle(.tertiary).lineLimit(2).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
+                Text(footer).font(.prismMeta).foregroundStyle(.secondary).lineLimit(2).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
             }
             if !brief.links.isEmpty {
                 WrapLayout(spacing: Space.s) {
