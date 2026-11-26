@@ -33,7 +33,8 @@ It exits 1 when a step fails. A line reads:
   instead of fading.
 - **duration** (fails): a step with `expect` must last no longer than it asks for plus two 60 Hz frames, and at least 40 %
   of it (an ease's last stretch moves less than a picture pixel, so a 0.25 s ease is visible for about 0.1 to 0.2 s). `expect: 0`
-  means one frame at most. Under Reduce Motion only the upper bound counts. Frames under 10 % of a step's largest change are a
+  means one frame at most. Both bounds give one of the film's own frame intervals more (8 ms at 120 fps, 33 ms when a busy Mac
+  holds the recorder to 30 fps), since the film only sees a change start and end to within a frame. Under Reduce Motion only the upper bound counts. Frames under 10 % of a step's largest change are a
   tail and neither extend the run nor count as stalls.
 - The last line compares the final frame with a still taken after the run (the window controls left out, as a
   screenshot draws them differently).
