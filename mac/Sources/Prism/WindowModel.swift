@@ -28,6 +28,8 @@ final class WindowModel {
     var askDraft = ""
     var focus: FocusRequest?
     var boardShown = true
+    /// When the window was last looked at, and the "While you were away" digest it gives.
+    var away = AwayWatch()
     /// A fold a demo script asks for: `handled`, or `track:ID`.
     var foldRequest: FoldRequest?
     /// The targets a demo script holds hovered and pressed with no pointer; views compare their own `targetID` with them.

@@ -493,6 +493,20 @@
       "track": "119",
       "kind": "answered",
       "did": "Answered D13: allow once"
+    },
+    {
+      "id": "e505",
+      "at": "2026-11-24T08:15:00Z",
+      "track": "121",
+      "kind": "started",
+      "did": "Started app-template-node under bun-rollout"
+    },
+    {
+      "id": "e506",
+      "at": "2026-11-24T07:40:00Z",
+      "track": "126",
+      "kind": "verified",
+      "did": "Ran verify on image-budget: pass"
     }
   ]
 }
