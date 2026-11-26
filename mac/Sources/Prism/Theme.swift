@@ -419,6 +419,28 @@ extension View {
     }
 }
 
+/// The primary action in ink: Theme.ink fill, Theme.onInk label, drawn the same whether or not the window is key, since
+/// a system prominent button greys out in a window that is not active and then reads as disabled. Disabled is 40 %.
+struct InkButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Target(configuration: configuration)
+    }
+
+    private struct Target: View {
+        let configuration: Configuration
+        @Environment(\.isEnabled) private var enabled
+
+        var body: some View {
+            configuration.label
+                .foregroundStyle(Theme.onInk)
+                .padding(.horizontal, Space.m)
+                .padding(.vertical, Space.xs)
+                .background(Capsule().fill(Theme.ink))
+                .opacity(enabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
+        }
+    }
+}
+
 /// One style for every row- or card-shaped target: rest clear (a card keeps its fill), hover 5 %, pressed 9 % at once and
 /// eased out over 0.12 s on release, disabled 40 %. No scale.
 struct RowButtonStyle: ButtonStyle {

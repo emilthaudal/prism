@@ -57,6 +57,11 @@ struct ComposerView: View {
 }
 
 extension View {
+    /// A click anywhere in the padded shape puts the caret in its text field; buttons inside keep their own clicks.
+    func focusOnTap(_ focus: FocusState<ComposerField?>.Binding, _ field: ComposerField) -> some View {
+        contentShape(Rectangle()).onTapGesture { focus.wrappedValue = field }
+    }
+
     /// Shift+return makes a new line in a field that otherwise sends on return.
     func newlineOnShiftReturn(in text: Binding<String>) -> some View {
         onKeyPress(.return, phases: .down) { press in
@@ -139,6 +144,7 @@ struct MessageComposer: View {
             }
         }
         .padding(Space.l)
+        .focusOnTap(focus, .desk)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous))
     }
 
@@ -298,6 +304,7 @@ struct QuestionComposer: View {
                     }
                     .padding(.horizontal, Space.s)
                     .padding(.top, Space.xs)
+                    .focusOnTap(focus, .answer)
                     if store.canAsk(question) { askRow }
                 }
                 if model.askingAbout == question.id { askField }
@@ -325,7 +332,7 @@ struct QuestionComposer: View {
     private func answerRow(staging: Bool, stagedChoice: AnswerChoice?) -> some View {
         @Bindable var model = model
         let empty = model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let canSend = !empty || question.recommendationText != nil || stagedChoice != nil
+        let canSend = !empty || question.recommendedChoice != nil || stagedChoice != nil
         return VStack(spacing: Space.s) {
             Divider()
             HStack(spacing: Space.s) {
@@ -350,14 +357,13 @@ struct QuestionComposer: View {
                     Text(staging && !empty ? "Stage \u{21A9}" : sendLabel(stagedChoice: stagedChoice) + " \u{21A9}")
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
-                        .foregroundStyle(Theme.onInk)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.ink)
+                .buttonStyle(InkButtonStyle())
                 .disabled(!canSend)
             }
             .padding(.horizontal, Space.s)
         }
+        .focusOnTap(focus, .answer)
     }
 
     private var askRow: some View {
