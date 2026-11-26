@@ -1,5 +1,5 @@
 -- Tracks in Rex. Load from ~/.config/rex/init.lua with:
---   dofile(os.getenv("HOME") .. "/Developer/tracks/rex/tracks.lua")
+--   dofile(os.getenv("HOME") .. "/Developer/prism/rex/tracks.lua")
 -- cmd+shift+h switches to the desk's session (the desk agent with the tracks pane beside it; started
 -- on first use, and always first in the session list) and, pressed there, back to the session you came from. enter in the pane jumps to the track's agent.
 -- cmd+shift+k goes straight to the track that needs you most (cmd+shift+] is Rex's Show Next Tab).

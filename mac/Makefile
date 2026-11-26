@@ -38,12 +38,15 @@ app:
 	fi
 	@echo "built $(APP)"
 
-# Redraws the art of the app icon, "The split", into Resources/Prism.icon: scripts/icon.mjs writes the SVG, WebKit
-# renders it offscreen (its blur filters need a browser engine). Commit the PNG; make app compiles the .icon with actool.
+# Redraws the art of the app icon, "The split", into Resources/Prism.icon: scripts/icon.mjs writes one SVG per layer,
+# WebKit renders them offscreen (the blur filters need a browser engine), and Icon Composer's ictool draws the finished
+# icon for the README. Commit the PNGs; make app compiles the .icon with actool.
 icon:
 	mkdir -p build Resources/Prism.icon/Assets
-	node scripts/icon.mjs build/icon.svg
-	swift scripts/render-svg.swift build/icon.svg 1024 Resources/Prism.icon/Assets/split.png
+	node scripts/icon.mjs build/icon
+	swift scripts/render-svg.swift $(foreach l,glows light prism,build/icon/$(l).svg 1024 Resources/Prism.icon/Assets/$(l).png)
+	"$$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool" Resources/Prism.icon --export-image \
+		--output-file docs/icon.png --platform macOS --rendition Default --width 256 --height 256 --scale 2 >/dev/null
 
 # Installs build/Prism.app as ~/Applications/Prism.app, replacing an older copy.
 install: app
