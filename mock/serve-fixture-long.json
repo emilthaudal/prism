@@ -331,6 +331,36 @@
       },
       "seen_at": "2026-11-24T11:05:00Z",
       "updated_at": "2026-11-24T11:01:00Z"
+    },
+    {
+      "id": "4f5a6b7c-8d9e-4f0a-9b1c-9d0e1f2a3be9",
+      "short": "4f5a6b7c",
+      "track": "114",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "background",
+      "name": "recipe-search-speed",
+      "status": "working",
+      "waiting_for": "",
+      "activity": "Bash: go test -bench . ./search",
+      "subagents": [],
+      "last_answer": "Ranking is 6% faster (p50 41 ms to 38.5 ms).\nLOOP: continue - cache the tokenizer",
+      "changes": {
+        "added": 140,
+        "removed": 52,
+        "files": 5,
+        "branch": "recipe-search-speed",
+        "merged": false
+      },
+      "seen_at": null,
+      "updated_at": "2026-11-24T13:30:00Z",
+      "loop": {
+        "turn": 3,
+        "turns": 20,
+        "until": "2026-11-25T05:30:00Z",
+        "state": "running",
+        "paused_until": null
+      }
     }
   ],
   "questions": [

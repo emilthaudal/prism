@@ -108,6 +108,8 @@ type apiSession struct {
 	Changes    *apiChanges   `json:"changes"`
 	SeenAt     *time.Time    `json:"seen_at"`
 	UpdatedAt  time.Time     `json:"updated_at"`
+	// Loop is the session's loop (EMI-466), left out when it runs none.
+	Loop *apiLoop `json:"loop,omitempty"`
 }
 
 type apiQuestion struct {
@@ -230,7 +232,7 @@ func newLiveSource(desk *deskRunner) *liveSource {
 }
 
 func (l *liveSource) changed() bool {
-	s := storeStamp() + usageStamp()
+	s := storeStamp() + usageStamp() + loopsStamp()
 	if l.desk != nil {
 		s += l.desk.stamp()
 	}
@@ -282,6 +284,7 @@ func (l *liveSource) snapshot(ctx context.Context) (any, error) {
 	snap := apiSnapshot{Tracks: []apiTrack{}, Sessions: []apiSession{}, Questions: []apiQuestion{}, Conversation: []apiEntry{}, Handled: []apiHandled{}}
 	trackID := map[string]string{}
 	working := map[string]bool{}
+	loops := snapshotLoops()
 	for _, s := range list {
 		if s.Track != "" && s.Status == "working" && s.Host != "stopped" {
 			working[s.Track] = true
@@ -313,6 +316,9 @@ func (l *liveSource) snapshot(ctx context.Context) (any, error) {
 			Name: s.Name, Status: s.Status, WaitingFor: s.WaitingFor, Activity: s.Activity, Subagents: []apiSubagent{}, LastAnswer: s.LastAnswer, SeenAt: apiTimePtr(s.SeenAt), UpdatedAt: apiTime(s.UpdatedAt)}
 		if s.Host == "stopped" {
 			a.Status = "stopped"
+		}
+		if s.ParentID != "" {
+			a.Loop = loops[s.Track]
 		}
 		if a.Name == "" {
 			a.Name = s.Track

@@ -99,8 +99,16 @@ func elicitationCmd(in io.Reader, out io.Writer) {
 	if err != nil || !ok {
 		return
 	}
-	q, ok := awaitPromptAnswer(h.SessionID, id, elicitationWait())
+	wait, timeoutNote := elicitationWait(), "timed out: answer with claude attach "+shortID(h.SessionID)
+	loop := isLoopSession(h.SessionID)
+	if loop {
+		wait, timeoutNote = loopPermissionWait, loopDenyNote
+	}
+	q, ok := awaitPromptAnswerNote(h.SessionID, id, wait, timeoutNote)
 	if !ok {
+		if loop && loopDenied(id) {
+			writePromptDecision(out, id, map[string]any{"hookEventName": "Elicitation", "action": "decline"}, map[string]any{"reason": loopDenyText})
+		}
 		return
 	}
 	specific, top := elicitationDecision(q)

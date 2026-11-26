@@ -214,7 +214,7 @@ func trackPrompt(name string) string { return "/track " + name }
 // deskStartCmd is tracks start run by the desk's agent: the card is made, then its session starts
 // in the background, owned by the desk, or waits in the queue while the desk runs as many
 // sessions as it may or other starts wait.
-func deskStartCmd(goal, dir, model, named, mode string, out io.Writer) error {
+func deskStartCmd(goal, dir, model, named, mode string, loop *loopState, out io.Writer) error {
 	max, err := maxDesk()
 	if err != nil {
 		return err
@@ -243,23 +243,34 @@ func deskStartCmd(goal, dir, model, named, mode string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
+	prompt := trackPrompt(name)
+	if loop != nil {
+		loop.Track = name
+		if err := writeLoop(*loop); err != nil {
+			return takeBackStart(name, fmt.Errorf("could not write the loop's state: %w", err))
+		}
+		prompt = loopPrompt(name, *loop)
+	}
 	if active >= max || len(queued) > 0 {
 		var ahead int
 		err := withBareStore(func(st *store.Store) (err error) {
-			ahead, err = st.QueueDeskStart(name, parent, model, trackPrompt(name))
+			ahead, err = st.QueueDeskStart(name, parent, model, prompt)
 			return err
 		})
 		if err != nil {
 			return fmt.Errorf("made the card %s but could not queue its start (card kept): %w", name, err)
 		}
 		fmt.Fprintf(out, "queued %s (%d ahead)\n", name, ahead)
-		return nil
+		return logLoopStart(loop)
 	}
-	id, err := startBackground(bgStart{track: name, dir: dir, model: model, parent: parent, prompt: trackPrompt(name)})
+	id, err := startBackground(bgStart{track: name, dir: dir, model: model, parent: parent, prompt: prompt})
 	if err != nil && id == "" {
 		return takeBackStart(name, err)
 	}
 	logErr := logDeskStart(name, goal, dir, id)
+	if logErr == nil {
+		logErr = logLoopStart(loop)
+	}
 	if err != nil {
 		return err
 	}
@@ -279,6 +290,7 @@ func takeBackStart(name string, why error) error {
 		}
 	}
 	os.Remove(threadSettingsPath(name))
+	os.Remove(loopPath(name))
 	if derr != nil {
 		return fmt.Errorf("refused: %w. Removing %s's card failed, so close it by hand: %v", why, name, derr)
 	}
@@ -489,6 +501,7 @@ func deskEvents(seen map[string]deskSeen, first bool) ([]deskEvent, error) {
 	if err := withBareStore(func(st *store.Store) error { return st.DeliverReports(ids) }); err != nil {
 		return nil, err
 	}
+	lines = loopEvents(lines, list)
 	for _, l := range questionLines(questions, seen) {
 		lines = append(lines, deskEvent{line: l})
 	}
