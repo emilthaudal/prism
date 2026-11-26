@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8">
+<title>Prism board: ideas for the quiet state</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--ink:#1c1c1e;--dim:#6b6b72;--faint:#9a9aa3;--card:rgba(255,255,255,.55);--line:rgba(0,0,0,.08);--pink:#d6336c;--violet:#7c5cff;--green:#2f9e58;--amber:#e8963a;--blue:#2f6bff;
+ --wall:linear-gradient(160deg,#dbe9f6 0%,#e9e1f3 38%,#f6dbe2 70%,#f5ecd9 100%)}
+@media (prefers-color-scheme:dark){:root{--ink:#f2f2f4;--dim:#a5a5ae;--faint:#77777f;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.1);
+ --wall:linear-gradient(160deg,#17222e 0%,#211c2c 40%,#2e1c24 72%,#2b2619 100%)}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;color:var(--ink);background:var(--wall) fixed;min-height:100vh}
+main{max-width:1280px;margin:0 auto;padding:40px 32px 80px}
+h1{font-size:28px;margin:0 0 4px;text-wrap:balance}h1+p{color:var(--dim);max-width:70ch;margin:0 0 32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:28px;align-items:start}
+figure{margin:0}figcaption{margin:0 4px 12px}figcaption b{font-size:17px}figcaption>span:not(.tag){display:block;color:var(--dim);font-size:13.5px;max-width:52ch}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;margin-left:8px;vertical-align:2px}
+.tag.rec{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}.tag.built{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}.tag.idea{background:var(--line);color:var(--dim)}
+.board{border:1px solid var(--line);border-radius:18px;padding:24px 20px;background:color-mix(in srgb,var(--card) 60%,transparent);backdrop-filter:blur(20px);min-height:560px}
+.board h2{font-size:20px;margin:0 0 12px}.sec{font-size:14px;font-weight:600;color:var(--dim);margin:20px 0 8px}.sec i{font-style:normal;font-weight:400;margin-left:8px;color:var(--faint)}
+.quiet{display:flex;gap:8px;align-items:center;color:var(--dim)}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}.dot.v{background:var(--violet)}.dot.a{background:var(--amber)}.dot.p{background:var(--pink)}.dot.f{background:var(--faint)}
+.digest{color:var(--dim);font-size:13.5px;margin:4px 0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px}
+.card .top{display:flex;align-items:center;gap:10px}.bar{width:3px;height:18px;border-radius:2px;background:var(--pink);flex:none}.bar.v{background:var(--violet)}
+.name{font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.state{font-size:12.5px;color:var(--faint)}
+dl{display:grid;grid-template-columns:48px 1fr;gap:4px 10px;margin:10px 0 0;font-size:13.5px}dt{color:var(--faint)}dd{margin:0}
+.foot{font-size:12.5px;color:var(--faint);margin-top:10px}.links{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.btn{font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:3px 9px;background:var(--card)}
+.row{display:flex;gap:10px;align-items:baseline;padding:7px 4px;font-size:14px}.row .t{color:var(--faint);font-size:12.5px;width:44px;flex:none;font-variant-numeric:tabular-nums}.row .w{flex:1}.row small{color:var(--dim);display:block}
+.num{font-family:ui-monospace,"SF Mono",monospace;font-size:12.5px}.add{color:var(--green)}.del{color:var(--pink)}
+.meter{height:5px;border-radius:3px;background:var(--line);margin:10px 0 4px;overflow:hidden}.meter b{display:block;height:100%;background:var(--violet);border-radius:3px}
+.kv{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim)}
+.spark{display:flex;gap:3px;align-items:flex-end;height:34px;margin-top:10px}.spark i{flex:1;background:color-mix(in srgb,var(--violet) 55%,transparent);border-radius:2px}
+.field{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--card);font-size:13.5px;margin:6px 0 10px}.field.big{min-height:54px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}.seg span{border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px;background:var(--card)}.seg .on{background:var(--ink);color:Canvas;border-color:transparent}
+.primary{display:inline-block;background:var(--blue);color:#fff;border-radius:9px;padding:7px 14px;font-weight:600;font-size:13.5px;margin-top:4px}
+.note{margin-top:36px;color:var(--dim);font-size:13.5px;max-width:80ch}
+</style>
+<main>
+<h1>What the board shows when nothing needs you</h1>
+<p>EMI-464. Five directions on made-up data. A is built on the overnight branch; D shows how an overnight loop (EMI-466) appears; B, C and E are mockups only.</p>
+<div class="grid">
+
+<figure><figcaption><b>A · Today</b><span class="tag rec">recommended</span><span class="tag built">built</span><span>The quiet board becomes the plan: every active track with its goal, where it stands and what it waits on. This is the card data that the app shows nowhere today.</span></figcaption>
+<div class="board"><h2>Board</h2><div class="quiet"><span class="dot"></span>Nothing needs you</div><div class="digest">Today: 3 landed · 5 handled by Prism · 2 answered</div>
+<div class="sec">Tracks<i>3</i></div>
+<div class="card"><div class="top"><span class="bar"></span><span class="name">recipe-search</span><span class="state">done</span></div><dl><dt>Goal</dt><dd>Refund rules in pantry-api, merged</dd><dt>Now</dt><dd>Stopped before merging PR #418</dd><dt>Today</dt><dd>PR #418 open, CI green, approved</dd></dl><div class="links"><span class="btn">github.com #418</span></div></div>
+<div class="card"><div class="top"><span class="bar v"></span><span class="name">bun-rollout</span><span class="state">3 sessions</span></div><dl><dt>Goal</dt><dd>Ship bun everywhere: one session per repo, stop at PRs</dd><dt>Now</dt><dd>Wave 1: build</dd><dt>Today</dt><dd>1 of 3 repos done</dd></dl><div class="foot">Check: CI green on queue-api? not yet · 12m ago</div></div>
+<div class="row"><span class="dot f"></span><span class="w">invoice-export<small>Waits on Alex · 3h</small></span></div>
+<div class="sec">In flight<i>2</i></div><div class="row"><span class="dot v"></span><span class="w">pantry-api<small>Running bun test · now</small></span><span class="num"><span class="add">+88</span> <span class="del">−61</span></span></div>
+</div></figure>
+
+<figure><figcaption><b>B · While you were away</b><span class="tag idea">mockup</span><span>A timeline since you last looked at the window: what landed, what Prism decided for itself, what stalled. Best first thing in the morning; thin during the day.</span></figcaption>
+<div class="board"><h2>Board</h2><div class="quiet"><span class="dot"></span>Nothing needs you</div>
+<div class="sec">Since 23:10<i>8 h 20 m away</i></div>
+<div class="card"><div class="kv"><span>4 sessions finished</span><span>2 landed · 2 ready</span></div><div class="kv"><span>Prism handled 7 things itself</span><span>0 undone</span></div><div class="kv"><span>1 session died and was resumed</span><span>03:12</span></div><div class="kv"><span>Usage overnight</span><span>31 % of the 5 h window, twice</span></div></div>
+<div class="row"><span class="t">06:48</span><span class="w">queue-api landed<small>bun replaces node in the Dockerfile and CI</small></span><span class="num"><span class="add">+14</span> <span class="del">−14</span></span></div>
+<div class="row"><span class="t">05:30</span><span class="w">Prism allowed <span class="num">go test ./...</span> once<small>pantry-api · tier 2 lets it</small></span></div>
+<div class="row"><span class="t">03:12</span><span class="w">app-template-node resumed<small>Its turn was cut by the usage limit at 02:40</small></span></div>
+<div class="row"><span class="t">01:05</span><span class="w">recipe-search ready to land<small>PR #418, CI green, Jordan approved</small></span><span class="num"><span class="add">+212</span> <span class="del">−40</span></span></div>
+<div class="row"><span class="t">23:40</span><span class="w">Prism nudged weekly-brief<small>The dashboard refresh was due</small></span></div>
+</div></figure>
+
+<figure><figcaption><b>C · Inspector</b><span class="tag idea">mockup</span><span>The board follows the selection. Pick a track in the sidebar and the right side is that track: its card, branch, PR and checks, and its decision history. With Prism selected it is the board as today.</span></figcaption>
+<div class="board"><h2>recipe-search</h2><div class="quiet"><span class="dot"></span>done · ready to land · tier 2</div>
+<div class="card"><dl><dt>Goal</dt><dd>Refund rules in pantry-api, merged</dd><dt>Now</dt><dd>Stopped before merging PR #418</dd><dt>Dir</dt><dd class="num">~/code/pantry-api</dd></dl></div>
+<div class="sec">Change</div><div class="card"><div class="kv"><span class="num">emi-377 → main</span><span class="num"><span class="add">+212</span> <span class="del">−40</span> · 6 files</span></div><div class="row" style="padding-left:0"><span class="dot"></span><span class="w">CI green<small>CircleCI #48211 · 4 m 12 s</small></span></div><div class="row" style="padding-left:0"><span class="dot"></span><span class="w">Approved<small>Jordan, 12:51</small></span></div><div class="links"><span class="btn">github.com #418</span><span class="btn">Open in Rex</span></div></div>
+<div class="sec">Decisions<i>3</i></div>
+<div class="row"><span class="t">D14</span><span class="w">Merge PR #418 in pantry-api now?<small>You: Merge now, squash · 14:31</small></span></div>
+<div class="row"><span class="t">D11</span><span class="w">Which currency rounding should refunds use?<small>You: Banker's rounding · 11:02</small></span></div>
+<div class="row"><span class="t">D9</span><span class="w">Allow <span class="num">gh pr create --draft</span>?<small>Prism: Allow once · 10:40</small></span></div>
+</div></figure>
+
+<figure><figcaption><b>D · A loop on the board</b><span class="tag built">data built</span><span>An overnight loop (EMI-466) while it runs and after it ends: iteration, deadline, budget and the measurement it optimises, then one report in the morning. The server side is on the branch; this card is a mockup.</span></figcaption>
+<div class="board"><h2>Board</h2><div class="quiet"><span class="dot"></span>Nothing needs you</div>
+<div class="sec">Loops<i>1 running</i></div>
+<div class="card"><div class="top"><span class="bar v"></span><span class="name">search-latency</span><span class="state">iteration 7 of 20</span></div><dl><dt>Goal</dt><dd>p95 of /search under 120 ms on the bench set</dd><dt>Now</dt><dd>Trying a prefix cache for stop words</dd></dl><div class="spark"><i style="height:100%"></i><i style="height:92%"></i><i style="height:90%"></i><i style="height:71%"></i><i style="height:73%"></i><i style="height:64%"></i><i style="height:58%"></i></div><div class="kv" style="margin-top:6px"><span>p95 212 ms → 123 ms</span><span>6 commits</span></div><div class="meter"><b style="width:46%"></b></div><div class="kv"><span>46 % of the 70 % budget</span><span>until 07:00 · Stop after this turn</span></div></div>
+<div class="sec">Reports<i>1</i></div>
+<div class="card"><div class="top"><span class="dot"></span><span class="name">bundle-size</span><span class="state">loop ended 04:12</span></div><div style="margin-top:8px;font-size:14px">11 iterations, stopped itself: nothing worth doing left. Main bundle 412 kB → 287 kB.</div><div class="foot">2 decisions it took for you, in LOOP.md · <span class="num"><span class="add">+340</span> <span class="del">−910</span></span> · loop/bundle-size · not merged</div></div>
+</div></figure>
+
+<figure><figcaption><b>E · Start a loop from the app</b><span class="tag idea">mockup</span><span>Today a loop starts by telling Prism in chat, or with <span class="num">tracks start --loop</span>. A sheet makes the limits visible before you go to bed.</span></figcaption>
+<div class="board" style="min-height:0"><h2>Run overnight</h2>
+<div class="sec" style="margin-top:4px">What should it keep improving?</div><div class="field big">Get p95 of /search under 120 ms on the bench set. Measure with make bench.</div>
+<div class="sec">Where</div><div class="field num">~/code/pantry-api</div>
+<div class="sec">Until</div><div class="seg"><span>2 h</span><span>4 h</span><span class="on">07:00</span><span>until done</span></div>
+<div class="sec">At most</div><div class="seg"><span>10 turns</span><span class="on">20 turns</span><span>50 turns</span></div>
+<div class="sec">Usage budget</div><div class="seg"><span>50 %</span><span class="on">70 %</span><span>90 %</span></div>
+<div class="foot" style="margin-bottom:12px">Stops at commits on its own branch. Never merges, pushes or asks; permission prompts are denied after 2 minutes. Sonnet.</div>
+<span class="primary">Start loop</span></div></figure>
+
+</div>
+<p class="note">Sources of the ideas: Superego's board (plan in waves), Claude Code's agent view (grouping by what to do), Codex's Scheduled inbox (unread runs), Factory Missions (milestones with validation), Axel (budgets per agent). No surveyed tool has a real morning digest; B would be new.</p>
+</main></html>
