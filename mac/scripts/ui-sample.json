@@ -1,0 +1,82 @@
+{
+  "lead": 1.5,
+  "tail": 0.5,
+  "ui": {
+    "tolerance": 4,
+    "threshold": 0.002,
+    "shift": 1,
+    "masks": []
+  },
+  "steps": [
+    {
+      "name": "rest, the first decision loaded",
+      "at": 0, "do": "pick", "question": "D14",
+      "shot": "rest"
+    },
+    {
+      "name": "hover a sidebar row",
+      "at": 2, "do": "hover", "target": "row:track:114",
+      "shot": "sidebar-row-hover"
+    },
+    {
+      "name": "press a sidebar row",
+      "at": 4, "do": "press", "target": "row:track:114",
+      "shot": "sidebar-row-pressed"
+    },
+    {
+      "name": "release",
+      "at": 6, "do": "press", "target": ""
+    },
+    {
+      "name": "hover a board card",
+      "at": 7, "do": "hover", "target": "card:D14",
+      "shot": "board-card-hover"
+    },
+    {
+      "name": "press a board card",
+      "at": 9, "do": "press", "target": "card:D14",
+      "shot": "board-card-pressed"
+    },
+    {
+      "name": "release and move away",
+      "at": 11, "do": "press", "target": ""
+    },
+    {
+      "name": "pointer away",
+      "at": 11.5, "do": "hover", "target": ""
+    },
+    {
+      "name": "decision loaded into the composer",
+      "at": 12, "do": "pick", "question": "D15",
+      "shot": "composer-decision"
+    },
+    {
+      "name": "card closed for the message field",
+      "at": 14, "do": "dismiss"
+    },
+    {
+      "name": "message typed",
+      "at": 14.5, "do": "draft", "text": "Merge it and install",
+      "shot": "composer-draft"
+    },
+    {
+      "name": "message cleared",
+      "at": 19.5, "do": "draft", "text": ""
+    },
+    {
+      "name": "composer focused",
+      "at": 20, "do": "focus", "field": "desk",
+      "shot": "composer-focused"
+    },
+    {
+      "name": "list folded",
+      "at": 22, "do": "fold", "fold": "track:121",
+      "shot": "list-folded"
+    },
+    {
+      "name": "list unfolded",
+      "at": 24, "do": "fold", "fold": "track:121",
+      "shot": "list-unfolded"
+    }
+  ]
+}

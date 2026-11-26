@@ -1,0 +1,89 @@
+{
+  "3f91c2aa-6b7c-4d8e-9f0a-1b2c3d4e5f61": {
+    "entries": [
+      {
+        "role": "user",
+        "text": "Replace node with bun in pantry-api: Dockerfile, CI and package scripts. Run bun test. Stop at a commit on bun/pantry-api.",
+        "at": "2026-11-24T12:58:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Swapped the base image to oven/bun:1.3 and moved the scripts to bun run. Running the test suite in three shards.",
+        "steps": 12,
+        "at": "2026-11-24T13:20:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Shard 1/3 passed. Shard 2/3 is running.",
+        "steps": 3,
+        "at": "2026-11-24T13:31:00Z"
+      }
+    ]
+  },
+  "b25e44d1-7c8d-4e9f-8a1b-2c3d4e5f6a72": {
+    "entries": [
+      {
+        "role": "user",
+        "text": "Replace node with bun in queue-api. Stop at a commit.",
+        "at": "2026-11-24T12:58:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "bun replaces node in the Dockerfile and CI, and bun test passes. Branch bun/queue-api.",
+        "steps": 9,
+        "at": "2026-11-24T13:21:00Z"
+      }
+    ]
+  },
+  "7a8b070e-2c1d-4e5f-9a0b-c1d2e3f4a5b6": {
+    "entries": [
+      {
+        "role": "user",
+        "text": "Get PR #418 green and approved, then stop before merging.",
+        "at": "2026-11-24T11:40:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Fixed the flaky refund-rule test and pushed. Waiting on CI.",
+        "steps": 14,
+        "at": "2026-11-24T12:30:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "PR #418 is open, CI is green and Jordan approved. Stopped before merging.",
+        "steps": 5,
+        "at": "2026-11-24T13:26:00Z"
+      }
+    ]
+  },
+  "5d6e7f80-9a0b-4c1d-8e2f-4a5b6c7d8e94": {
+    "entries": [
+      {
+        "role": "user",
+        "text": "Make Scanner skip the b2c BFF and open a draft PR.",
+        "at": "2026-11-24T12:50:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Added the path to the Scanner ignore list. Opening a draft PR needs a permission prompt.",
+        "steps": 6,
+        "at": "2026-11-24T13:26:00Z"
+      }
+    ]
+  },
+  "9a1b2c3d-0e1f-4a2b-9c3d-5e6f7a8b9ca5": {
+    "entries": [
+      {
+        "role": "user",
+        "text": "/weekly-brief",
+        "at": "2026-11-24T12:20:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Brief written to the Platform Program dashboard: two capabilities drifted, one increment has no owner.",
+        "steps": 21,
+        "at": "2026-11-24T12:40:00Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+ Desk                                                                                                                   1 track · ◆ 2 for you · handled 0 today
+ NEEDS YOU 2                                                                                                                                                    
+▌◆ Finalize-Pantry-decis… D1 D7 agent login: record "C, Entra SSO built in PAN-141; franchisees keep login links unt…  → 1 Yes                                  
+ ◆                        D2 D3 Returns context: you put A with no name. Record it as yours, or wait for Robin in th…  → wait for Robin: his decision…          
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ FOCUS                                                │ Finalize-Pantry-decision-logs  T1 · focus
+•▌Finalize-Pantry-decision-logs -             ◆2  T1  │ no agent · enter starts one                                                 
+   Platform log (PAN-88): D1, D2 decided; D3, … · 0m  │ 
+                                                      │ Platform log (PAN-88): D1, D2 decided; D3, D4, D7 still open.
+                                                      │ Integration log (PAN-89): all 8 decided.
+                                                      │ 
+                                                      │ ┃ Needs me  1-2 accept · r reply
+                                                      │ ┃ 
+                                                      │ ┃ 1  D7 agent login: record "C, Entra SSO built in PAN-141; franchisees keep
+                                                      │ ┃    login links until they need access"?
+                                                      │ ┃    → yes
+                                                      │ ┃ 
+                                                      │ ┃ 2  D3 Returns context: you put A with no name. Record it as yours, or wait
+                                                      │ ┃    for Robin in the PAN-92 canvas review?
+                                                      │ ┃    → wait for Robin: his decision, and it needs an ADR
+                                                      │ 
+                                                      │ GOAL
+                                                      │ Finalize the open Pantry platform and Pantry integration decision logs so
+                                                      │ the build teams can start on the agreed shape of both, with every open …
+                                                      │ Links  PAN-88 · PAN-89 · PAN-91 · PAN-92 · 2 Confluence pages
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑↓ move  enter open  tab next  1-9 accept · r reply  o link  n new  f b w p mode  x close  ? keys  q quit                                                     

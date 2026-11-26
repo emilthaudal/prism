@@ -1,0 +1,61 @@
+{
+  "lead": 3,
+  "tail": 1.5,
+  "steps": [
+    {
+      "name": "load D15 into the composer",
+      "at": 0,
+      "do": "pick",
+      "question": "D15",
+      "expect": 0.3,
+      "crossfade": true
+    },
+    {
+      "name": "load D14 into the composer",
+      "at": 2,
+      "do": "pick",
+      "question": "D14",
+      "expect": 0.3,
+      "crossfade": true
+    },
+    {
+      "name": "press 1",
+      "at": 4,
+      "do": "answer",
+      "question": "D14",
+      "option": 1,
+      "expect": 0.25,
+      "crossfade": true
+    },
+    {
+      "name": "z",
+      "at": 4.8,
+      "do": "undo",
+      "question": "D14",
+      "expect": 0.25,
+      "crossfade": true
+    },
+    {
+      "name": "answer D14",
+      "at": 6.6,
+      "do": "answer",
+      "question": "D14",
+      "option": 1,
+      "expect": 0.25,
+      "crossfade": true
+    },
+    {
+      "name": "countdown runs out",
+      "at": 7,
+      "do": "wait",
+      "continuous": true
+    },
+    {
+      "name": "answer D14 and D15 loads",
+      "at": 11.6,
+      "do": "wait",
+      "expect": 0.3,
+      "crossfade": true
+    }
+  ]
+}

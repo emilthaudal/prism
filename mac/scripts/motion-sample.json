@@ -1,0 +1,94 @@
+{
+  "lead": 3,
+  "tail": 1.5,
+  "steps": [
+    {
+      "name": "report arrives",
+      "at": 0,
+      "do": "event",
+      "event": {
+        "op": "upsert",
+        "kind": "conversation",
+        "value": {
+          "id": "m91",
+          "role": "report",
+          "session": "3f91c2aa-6b7c-4d8e-9f0a-1b2c3d4e5f61",
+          "track": "121",
+          "outcome": "done",
+          "text": "pantry-api builds and tests on bun. CI is green on the branch."
+        }
+      }
+    },
+    {
+      "name": "decision opens",
+      "at": 1.5,
+      "do": "event",
+      "event": {
+        "op": "upsert",
+        "kind": "question",
+        "value": {
+          "id": "D16",
+          "track": "121",
+          "from": "desk",
+          "question": "Open the pantry-api PR for the bun rollout?",
+          "options": [
+            {
+              "label": "Open it",
+              "description": "CI green, +88 −61 in 9 files"
+            },
+            {
+              "label": "Wait",
+              "description": "Until app-template-node is done too."
+            }
+          ],
+          "recommended": 0,
+          "answer": null
+        }
+      }
+    },
+    {
+      "name": "loaded into the composer",
+      "at": 3,
+      "do": "pick",
+      "question": "D16"
+    },
+    {
+      "name": "answered",
+      "at": 4.5,
+      "do": "answer",
+      "question": "D16"
+    },
+    {
+      "name": "counts down",
+      "at": 4.75,
+      "do": "wait",
+      "continuous": true
+    },
+    {
+      "name": "sends",
+      "at": 9.3,
+      "do": "wait"
+    },
+    {
+      "name": "track moves Focus to Waiting",
+      "at": 11,
+      "do": "mode",
+      "track": "119",
+      "mode": "waiting"
+    },
+    {
+      "name": "track folds",
+      "at": 14,
+      "do": "fold",
+      "fold": "track:121",
+      "expect": 0.2
+    },
+    {
+      "name": "track unfolds",
+      "at": 15.5,
+      "do": "fold",
+      "fold": "track:121",
+      "expect": 0.2
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+import Foundation
+
+/// `Prism [--fixture PATH] [--appearance light|dark] [--background] [--select ID] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]`.
+struct LaunchOptions {
+    static let usage = "usage: Prism [--fixture PATH] [--appearance light|dark] [--background] [--select QUESTION-OR-SESSION-ID] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]"
+
+    /// Runs on this snapshot in memory instead of prism server.
+    var fixture: URL?
+    var appearance: String?
+    /// For captures: no Dock icon, never active or key, no notifications.
+    var background = false
+    var select: String?
+    /// Fixture captures only: takes the recommendation once loaded, so the countdown shows without a key press.
+    var demoAnswer = false
+    /// Fixture captures only: stages the recommended answer to the asker's other open questions, so the batch shows.
+    var demoStage = false
+    /// Fixture captures only: picks option N (from 1) of the selected question, as a click on it would.
+    var demoPick: Int?
+    /// Fixture captures only: a window with the sidebar alone, off the glass, so --snapshot draws its rows.
+    var sidebarOnly = false
+    /// Fixture only: plays this script's timed changes (see scripts/motion-sample.json).
+    var demoScript: URL?
+    /// With --demo-script: waits for the recorder's flag here, then writes the step timings here (make motion).
+    var motionDir: URL?
+    /// With --demo-script: writes a request file here for each step's still and waits for the PNG (make ui-check).
+    var uiDir: URL?
+    /// Draws the window's views into this PNG once settled, then quits: a capture without Screen Recording. Window
+    /// materials (glass, blur) don't draw this way, and on macOS 26 neither does the sidebar, whose glass panel draws
+    /// in its own layers: it shows the conversation and the board.
+    var snapshot: URL?
+
+    struct Invalid: Error, CustomStringConvertible { var description: String }
+
+    init(arguments: [String]) throws {
+        var it = arguments.makeIterator()
+        while let arg = it.next() {
+            switch arg {
+            case "--fixture": fixture = URL(fileURLWithPath: try Self.value(arg, &it))
+            case "--appearance": appearance = try Self.value(arg, &it)
+            case "--background": background = true
+            case "--demo-answer": demoAnswer = true
+            case "--demo-stage": demoStage = true
+            case "--demo-pick":
+                let v = try Self.value(arg, &it)
+                guard let n = Int(v), n >= 1 else { throw Invalid(description: "--demo-pick needs an option number from 1: \(v)") }
+                demoPick = n
+            case "--sidebar-only": sidebarOnly = true
+            case "--demo-script": demoScript = URL(fileURLWithPath: try Self.value(arg, &it))
+            case "--motion-dir": motionDir = URL(fileURLWithPath: try Self.value(arg, &it))
+            case "--ui-dir": uiDir = URL(fileURLWithPath: try Self.value(arg, &it))
+            case "--select": select = try Self.value(arg, &it)
+            case "--snapshot": snapshot = URL(fileURLWithPath: try Self.value(arg, &it))
+            // AppKit and Xcode pass these; they are not ours. AppKit reads -reduceMotion YES as Reduce Motion for this
+            // process alone.
+            case let a where a.hasPrefix("-NS") || a.hasPrefix("-Apple") || a == "-reduceMotion": _ = it.next()
+            default: throw Invalid(description: "unknown argument \(arg)")
+            }
+        }
+    }
+
+    private static func value(_ flag: String, _ it: inout IndexingIterator<[String]>) throws -> String {
+        guard let v = it.next() else { throw Invalid(description: "\(flag) needs a value") }
+        return v
+    }
+}

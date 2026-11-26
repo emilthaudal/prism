@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs `tracks check` every 10 minutes. Install with `make install-check`, which
+  replaces __HOME__ (launchd does not expand ~ or $HOME) and bootstraps the job.
+
+  Under launchd, gh runs with its default (active) account. With more than one gh
+  login, set TRACKS_GH_ACCOUNTS (owner=login or ~/dir=login, comma-separated) in
+  EnvironmentVariables below: per card, tracks check reads the git remote of the
+  card's dir and passes GH_TOKEN from gh auth token for the login it maps to.
+  It never runs gh auth switch.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>dev.emilthaudal.tracks-check</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__HOME__/.local/bin/tracks</string>
+		<string>check</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+		<key>NO_COLOR</key>
+		<string>1</string>
+	</dict>
+	<key>StartInterval</key>
+	<integer>600</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>__HOME__/.local/state/tracks/check.log</string>
+	<key>StandardErrorPath</key>
+	<string>__HOME__/.local/state/tracks/check.log</string>
+</dict>
+</plist>
