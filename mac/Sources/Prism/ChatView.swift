@@ -8,7 +8,7 @@ struct ChatView: View {
 
     var body: some View {
         let s = store.snapshot
-        let board = Board(s)
+        let board = store.board
         ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible) {
             LazyVStack(alignment: .leading, spacing: Space.none) {
                 let kinds = s.conversation.map { Self.kind(of: $0) }
@@ -318,6 +318,14 @@ struct TranscriptView: View {
     @State private var transcript: Transcript?
     @State private var failure: String?
 
+    /// The entries with words in them: a prompt that was only a picture or a tool result has no text, and drew as an
+    /// empty black bubble. An assistant turn of tool calls alone still shows its step count.
+    private var shownEntries: [TranscriptEntry] {
+        (transcript?.entries ?? []).filter { e in
+            !e.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (e.role != "user" && (e.steps ?? 0) > 0)
+        }
+    }
+
     private static func kind(of entry: TranscriptEntry) -> Rhythm.Kind {
         switch entry.role {
         case "user": .emil
@@ -328,14 +336,14 @@ struct TranscriptView: View {
 
     var body: some View {
         VStack(spacing: Space.none) {
-            ArrivalScroll(ids: (transcript?.entries ?? []).indices.map(String.init), scrollRequest: nil, windowVisible: model.windowVisible) {
+            let entries = shownEntries
+            ArrivalScroll(ids: entries.indices.map(String.init), scrollRequest: nil, windowVisible: model.windowVisible) {
                 LazyVStack(alignment: .leading, spacing: Space.none) {
                     if let failure {
                         Text(failure).foregroundStyle(.secondary).conversationText()
-                    } else if let transcript, transcript.entries.isEmpty {
+                    } else if transcript != nil, entries.isEmpty {
                         Text("No transcript yet.").foregroundStyle(.secondary).conversationText()
                     }
-                    let entries = transcript?.entries ?? []
                     let kinds = entries.map { Self.kind(of: $0) }
                     ForEach(Array(entries.enumerated()), id: \.offset) { i, entry in
                         let prev = i > 0 ? (kind: kinds[i - 1], at: entries[i - 1].at) : nil

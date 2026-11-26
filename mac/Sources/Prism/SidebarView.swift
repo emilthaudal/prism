@@ -39,9 +39,9 @@ struct SidebarView: View {
         .listStyle(.sidebar)
         .animation(model.windowVisible ? Motion.moves(Motion.quick, reduce: reduce) : nil, value: sidebar.structure)
         // The usage limits at the sidebar's foot (EMI-408): outside the list's scrolling, gone with the sidebar.
-        .safeAreaInset(edge: .bottom, spacing: Space.none) { SidebarFoot(store: store) }
+        .safeAreaBar(edge: .bottom, spacing: Space.none) { SidebarFoot(store: store) }
         // The count shows only while something waits; the board's "Nothing needs you" covers the quiet case.
-        .safeAreaInset(edge: .top, spacing: Space.none) {
+        .safeAreaBar(edge: .top, spacing: Space.none) {
             if sidebar.waitingOnYou > 0 { WaitingHeader(count: sidebar.waitingOnYou).transition(Motion.needsYouTransition(reduce: reduce)) }
         }
         .onChange(of: model.foldRequest) { _, request in

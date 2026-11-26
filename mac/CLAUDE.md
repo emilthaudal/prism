@@ -26,5 +26,8 @@ Prism is the desk's native window (renamed from Desk on 2026-11-25; the CLI keep
   tile.
 - `make ui-check` plays `scripts/ui-sample.json` on the fixture, sets hover, press, focus and selection inside the app, takes a
   still per step in the background and compares it with `ui/baselines`, which are local and not in git: `make ui-baseline` before a change, `make ui-check` after it (docs/motion.md).
+- `make stress` writes worst-case fixtures into build/stress (scripts/stress-fixture.py): `big` (40 tracks, 120 sessions,
+  30 open questions, 2000 messages, plus `replay.json`, a report every half second), `worst` (long, one-letter, emoji and
+  non-Latin names, huge counts, missing fields) and `empty`. An idle window should sit near 0 % CPU on `big` (`top -l`).
 - One spacing scale (`Space` in Theme.swift), native controls first, text never closer to a shape's edge than its corner
   radius.
