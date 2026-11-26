@@ -10,7 +10,11 @@ struct LoopsSection: View {
 
     var body: some View {
         if !loops.isEmpty {
-            SectionHeading("Loops", count: loops.count)
+            HStack(spacing: Space.s) {
+                SectionHeading("Loops", count: loops.count)
+                Spacer(minLength: Space.s)
+                OvernightButton(model: model).padding(.top, Space.m).padding(.trailing, Space.m)
+            }
             ForEach(loops) { brief in
                 LoopCard(store: store, brief: brief) { model.selection = .session(brief.session.id) }
                     .arrives(brief.id)

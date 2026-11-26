@@ -28,6 +28,9 @@ final class WindowModel {
     var askDraft = ""
     var focus: FocusRequest?
     var boardShown = true
+    /// The "Run overnight" sheet, and the values a demo launch fills it with.
+    var overnightShown = false
+    var overnightSeed: OvernightLoop?
     /// When the window was last looked at, and the "While you were away" digest it gives.
     var away = AwayWatch()
     /// A fold a demo script asks for: `handled`, or `track:ID`.

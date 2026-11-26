@@ -35,6 +35,7 @@ struct DeskWindow: View {
                 .help("Show or hide the board")
             }
         }
+        .sheet(isPresented: $model.overnightShown) { OvernightSheet(store: store, model: model) }
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .frame(minWidth: 900, minHeight: 560)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { windowSize = $0 }

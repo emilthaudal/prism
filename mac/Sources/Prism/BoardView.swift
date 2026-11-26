@@ -48,7 +48,10 @@ struct BoardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.m) {
                 // Just the name: the window's one status line says the rest.
-                Text("Board").font(.prismTitle).boardText()
+                Text("Board").font(.prismTitle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(alignment: .trailing) { if loops.isEmpty { OvernightButton(model: model) } }
+                    .boardText()
                 if let digest = Away.digest(lastLooked: model.away.since, now: now, snapshot: s) {
                     AwaySection(digest: digest, model: model, now: now).arrives("away")
                 }

@@ -85,6 +85,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        if options.demoOvernight, fixture != nil {
+            model.overnightSeed = OvernightLoop(goal: "Get p95 of /search under 120 ms on the bench set. Measure with make bench.", folder: "~/code/pantry-api", until: .sevenOClock)
+            model.overnightShown = true
+        }
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
@@ -216,6 +220,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isReturn: event.keyCode == 36 || event.keyCode == 76,
             isEscape: event.keyCode == 53
         )
+        // ⇧⌘L is the menu's Run Overnight, not ⌘L.
+        if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
         let editing = window?.firstResponder is NSTextView
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.
@@ -271,6 +277,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func sendStaged() { perform(.sendStaged) }
     @objc private func askMore() { perform(.askMore) }
     @objc private func focusDesk() { perform(.focusDesk) }
+    @objc private func runOvernight() { model.overnightShown = true }
     @objc private func takeOver() { perform(.takeOver) }
     @objc private func giveBack() { perform(.giveBack) }
     private func updateVisibility() {
@@ -332,6 +339,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         answer.addItem(withTitle: "Send Staged Answers (\u{2318}\u{21A9})", action: #selector(sendStaged), keyEquivalent: "").target = self
         answer.addItem(withTitle: "Ask for More (m)", action: #selector(askMore), keyEquivalent: "").target = self
         answer.addItem(withTitle: "Message Prism (\u{2318}L)", action: #selector(focusDesk), keyEquivalent: "").target = self
+        let overnight = answer.addItem(withTitle: "Run Overnight\u{2026}", action: #selector(runOvernight), keyEquivalent: "l")
+        overnight.keyEquivalentModifierMask = [.command, .shift]
+        overnight.target = self
         answer.addItem(.separator())
         answer.addItem(withTitle: "Take Over Session (t)", action: #selector(takeOver), keyEquivalent: "").target = self
         answer.addItem(withTitle: "Give Back to Prism (g)", action: #selector(giveBack), keyEquivalent: "").target = self
