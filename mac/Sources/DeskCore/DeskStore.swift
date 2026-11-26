@@ -262,8 +262,11 @@ public final class DeskStore {
         return answers.undo(questionID) != nil
     }
 
-    /// Sends the answers whose undo window has passed.
+    /// Sends the answers whose undo window has passed. Reads before it writes: `takeDue` mutates `answers`, and any write
+    /// to it, even one that removes nothing, redraws every view that reads it, five times a second.
     public func tick() async {
+        let now = clock()
+        guard answers.items.contains(where: { $0.deadline <= now }) || answers.batches.contains(where: { $0.deadline <= now }) else { return }
         for due in answers.takeDue(now: clock()) {
             await sendAnswer(due.question, due.choice)
         }
