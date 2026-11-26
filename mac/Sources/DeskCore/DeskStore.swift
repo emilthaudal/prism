@@ -379,10 +379,12 @@ public final class DeskStore {
 
     // MARK: Other actions
 
-    public func sendMessage(_ text: String) async {
+    /// Whether the message went out; on a failure `notice` says why.
+    @discardableResult
+    public func sendMessage(_ text: String) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        await send(.message(text))
+        guard !text.isEmpty else { return false }
+        return await send(.message(text)) != nil
     }
 
     public func takeOver(_ sessionID: String) async {
