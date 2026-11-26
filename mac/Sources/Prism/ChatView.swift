@@ -93,10 +93,7 @@ struct AgentMessage: View {
                     if let at { Text(at.formatted(Theme.time)).font(.prismMeta).foregroundStyle(.secondary) }
                 }
             }
-            Text(Self.linked(text, open: openIDs))
-                .textSelection(.enabled)
-                .prose()
-                .fixedSize(horizontal: false, vertical: true)
+            MessageText(text: text) { Self.linked($0, open: openIDs) }
                 .environment(\.openURL, OpenURLAction { url in
                     guard url.scheme == "prism-decision", let id = url.host() ?? url.host else { return .systemAction }
                     pick(id.uppercased())
@@ -237,7 +234,9 @@ struct ReportCard: View {
         }
     }
 
-    private var isLong: Bool { lines.count > 3 || entry.text.count > 280 }
+    private var blocks: [MarkdownBlock] { MarkdownCache.blocks(entry.text) }
+
+    private var isLong: Bool { lines.count > 3 || entry.text.count > 280 || !MarkdownBlocks.isPlain(blocks) }
 
     var body: some View {
         if isEmpty {
@@ -263,11 +262,15 @@ struct ReportCard: View {
                 Spacer(minLength: Space.s)
                 if let at = entry.at { Text(at.formatted(Theme.time)).font(.prismMeta).foregroundStyle(.secondary) }
             }
-            Text(Theme.markdown(lines.joined(separator: "\n")))
-                .lineLimit(expanded ? nil : 3)
-                .textSelection(.enabled)
-                .prose()
-                .fixedSize(horizontal: false, vertical: true)
+            if expanded, !MarkdownBlocks.isPlain(blocks) {
+                MessageText(text: entry.text)
+            } else {
+                Text(Theme.markdown(lines.joined(separator: "\n")))
+                    .lineLimit(expanded ? nil : 3)
+                    .textSelection(.enabled)
+                    .prose()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if isLong {
                 Button(expanded ? "Show less" : "Show more") { withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { expanded.toggle() } }
                     .buttonStyle(.plain)

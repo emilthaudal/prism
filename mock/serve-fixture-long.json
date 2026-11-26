@@ -753,6 +753,13 @@
       "role": "desk",
       "text": "Two need you: D14 and D15. I open the queue-api PR next unless you say no.",
       "steps": 2
+    },
+    {
+      "id": "m90b",
+      "at": "2026-11-24T13:31:00Z",
+      "role": "desk",
+      "text": "Rollout status for the bun swap.\n\n## Where each repo stands\n\n```go\nfunc pick(i, n int, repos []string) []string {\n\tvar out []string\n\tfor j := i; j < len(repos); j += n {\n\t\tout = append(out, repos[j])\n\t}\n\treturn out\n}\n```\n\n| Repo | PRs | State |\n|:--|--:|:--|\n| pantry-api | 1 | green |\n| recipe-search | 2 | CI running |\n| queue-api | 0 | waiting for a free runner before it can start its first job |\n\n- Dockerfile changes\n  - base image is oven/bun:1.3\n  - lockfile regenerated\n- CI moved to bun run\n- Package scripts",
+      "steps": 4
     }
   ],
   "handled": [

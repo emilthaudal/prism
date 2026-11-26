@@ -17,6 +17,12 @@
         "text": "Shard 1/3 passed. Shard 2/3 is running.",
         "steps": 3,
         "at": "2026-11-24T13:31:00Z"
+      },
+      {
+        "role": "assistant",
+        "text": "Here is the shard summary.\n\n## Shard results\n\n```go\nfunc shard(i, n int, tests []string) []string {\n\tvar out []string\n\tfor j := i; j < len(tests); j += n {\n\t\tout = append(out, tests[j])\n\t}\n\treturn out\n}\n```\n\n| Shard | Tests | Result |\n|:--|--:|:--|\n| 1/3 | 42 | passed |\n| 2/3 | 40 | running |\n| 3/3 | 41 | queued, waiting for a free runner before it starts |\n\n- Dockerfile\n  - base image is oven/bun:1.3\n  - lockfile regenerated\n- CI\n- Package scripts",
+        "steps": 5,
+        "at": "2026-11-24T13:33:00Z"
       }
     ]
   },
