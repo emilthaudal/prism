@@ -22,7 +22,7 @@ struct BoardView: View {
 
     /// Entries handled on today's calendar day; the full log waits behind "Show all".
     static func handledToday(_ entries: [Handled], now: Date) -> Int {
-        entries.filter { $0.at.map { Calendar.current.isDate($0, inSameDayAs: now) } ?? false }.count
+        BoardPlan.handledToday(entries, now: now).count
     }
 
     /// The track's name, or "Prism" for what the desk noted for itself.
@@ -49,6 +49,8 @@ struct BoardView: View {
                         Spacer(minLength: 0)
                     }
                     .boardText()
+                    QuietBoard(plan: BoardPlan(s, now: now), model: model, now: now)
+                        .arrives("quiet")
                 }
                 if !board.needsYou.isEmpty {
                     SectionHeading("Needs you", count: board.needsYou.count)

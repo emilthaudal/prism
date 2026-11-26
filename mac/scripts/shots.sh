@@ -51,6 +51,12 @@ if [ -z "${ONLY:-}" ] || [ "${ONLY:-}" = sidebar ]; then
 fi
 [ "${ONLY:-}" = sidebar ] && exit 0
 
+# The board's quiet state: no open questions, so the day's digest and a brief per track.
+export FIXTURE_OVERRIDE="$(dirname "$fixture")/serve-fixture-quiet.json"
+shot board-quiet-light light
+shot board-quiet-dark dark
+unset FIXTURE_OVERRIDE
+
 # A batch: the fixture's recipe-search has three open questions; two are staged, the third shows on the card above the desk field.
 export FIXTURE_OVERRIDE="$(dirname "$fixture")/serve-fixture-batch.json"
 shot batch-staged-light light --select D18 --demo-stage
