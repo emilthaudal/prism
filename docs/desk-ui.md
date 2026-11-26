@@ -240,48 +240,48 @@ In the sessions column, pantry-api: its transcript with tool calls folded into s
 ```text
 ╭─ Sessions ─────────────────────╮╭─ pantry-api · transcript ────────────────────────────────────────────────────────── desk · background · ◐ now ─╮╭─ Board ───────────────── 2 need you · 1 running ─╮
 │  ● Prism                  idle ││                                                                                                                ││ Tuesday 24 Nov                          5 tracks │
-│                                ││                                                                                                                ││ 3 landed · 2 ready · 3 in flight                 │
+│                                ││  Now: Bash: bun test --shard 2/3                                                                               ││ 3 landed · 2 ready · 3 in flight                 │
 │  FOCUS                         ││                                                                                                                ││ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │
-│  recipe-search  ? Question  2m ││                                                                                                                ││                                                  │
-│  bun-rollout          lead · 3 ││                                                                                                                ││ NEEDS YOU                                      2 │
-│ ▌ ├ pantry-api           ◐ now ││                                                                                                                ││  ◆ D14 recipe-search                   desk · 2m │
+│  recipe-search  ? Question  2m ││  Prism  12:58                                                                                                  ││                                                  │
+│  bun-rollout          lead · 3 ││    Replace node with bun in pantry-api: Dockerfile, CI and package scripts. Run bun test. Stop at a commit on  ││ NEEDS YOU                                      2 │
+│ ▌ ├ pantry-api           ◐ now ││    bun/pantry-api.                                                                                             ││  ◆ D14 recipe-search                   desk · 2m │
 │   ├ queue-api           ● done ││                                                                                                                ││    Merge PR #418 in pantry-api now?              │
-│   └ app-template-node ○ queued ││                                                                                                                ││    ★1 Merge now  2 Wait for Alex                 │
-│  scanner-skips-sh…  ▲ Perm  6m ││                                                                                                                ││    3 Hold until tomorrow                         │
-│                                ││                                                                                                                ││    ✓ CI green                    CircleCI #48211 │
-│  BACKGROUND                    ││                                                                                                                ││    ✓ Approved                      Jordan, 12:51 │
+│   └ app-template-node ○ queued ││  pantry-api  13:20                                                                                             ││    ★1 Merge now  2 Wait for Alex                 │
+│  scanner-skips-sh…  ▲ Perm  6m ││    Swapped the base image to oven/bun:1.3 and moved the scripts to bun run. Running the test suite in three    ││    3 Hold until tomorrow                         │
+│                                ││    shards.                                                                                                     ││    ✓ CI green                    CircleCI #48211 │
+│  BACKGROUND                    ││    ▸ 12 steps                                                                                                  ││    ✓ Approved                      Jordan, 12:51 │
 │  weekly-brief      emil ● done ││                                                                                                                ││    ✓ No code freeze                   Gatekeeper │
-│                                ││                                                                                                                ││    o https://github.com/acme/pantry-api/pull/418 │
-│  WAITING                       ││                                                                                                                ││  ▲ D15 scanner-skips-shop-api         agent · 6m │
-│  invoice-export      Alex · 3h ││                                                                                                                ││    Run gh pr create --draft --base main?         │
+│                                ││  pantry-api  13:31                                                                                             ││    o https://github.com/acme/pantry-api/pull/418 │
+│  WAITING                       ││    Shard 1/3 passed. Shard 2/3 is running.                                                                     ││  ▲ D15 scanner-skips-shop-api         agent · 6m │
+│  invoice-export      Alex · 3h ││    ▸ 3 steps                                                                                                   ││    Run gh pr create --draft --base main?         │
 │                                ││                                                                                                                ││    ★1 Allow once  2 Allow for this session       │
-│  PARKED 2 ▸                    ││                                                                                                                ││    3 Deny                                        │
-│                                ││                                                                                                                ││    ✓ A draft PR is where desk sessions stop · T… │
+│  PARKED 2 ▸                    ││  pantry-api  13:33                                                                                             ││    3 Deny                                        │
+│                                ││    Here is the shard summary.                                                                                  ││    ✓ A draft PR is where desk sessions stop · T… │
 │                                ││                                                                                                                ││                                                  │
-│                                ││                                                                                                                ││ IN FLIGHT                                      3 │
+│                                ││    ## Shard results                                                                                            ││ IN FLIGHT                                      3 │
 │                                ││                                                                                                                ││  ◐ pantry-api                  +88 −61 · 9 files │
-│                                ││                                                                                                                ││    bun-rollout · Bash: bun test --shard 2/3      │
-│                                ││                                                                                                                ││  ○ app-template-node                      queued │
-│                                ││                                                                                                                ││    bun-rollout · queued · cap 4                  │
-│                                ││                                                                                                                ││  ▲ scanner-skips-shop-api       +31 −4 · 3 files │
-│                                ││                                                                                                                ││    waiting on permission prompt                  │
-│                                ││                                                                                                                ││                                                  │
-│                                ││                                                                                                                ││ READY TO LAND                                  2 │
-│                                ││                                                                                                                ││  ● recipe-search              +212 −40 · 6 files │
-│                                ││  Now: Bash: bun test --shard 2/3                                                                               ││    emi-377 · not merged                          │
+│                                ││    ```go                                                                                                       ││    bun-rollout · Bash: bun test --shard 2/3      │
+│                                ││    func shard(i, n int, tests []string) []string {                                                             ││  ○ app-template-node                      queued │
+│                                ││     var out []string                                                                                           ││    bun-rollout · queued · cap 4                  │
+│                                ││     for j := i; j < len(tests); j += n {                                                                       ││  ▲ scanner-skips-shop-api       +31 −4 · 3 files │
+│                                ││      out = append(out, tests[j])                                                                               ││    waiting on permission prompt                  │
+│                                ││     }                                                                                                          ││                                                  │
+│                                ││     return out                                                                                                 ││ READY TO LAND                                  2 │
+│                                ││    }                                                                                                           ││  ● recipe-search              +212 −40 · 6 files │
+│                                ││    ```                                                                                                         ││    emi-377 · not merged                          │
 │                                ││                                                                                                                ││  ● queue-api                   +14 −14 · 2 files │
-│                                ││  Prism  12:58                                                                                                  ││    bun-rollout · bun/queue-api · not merged      │
-│                                ││    Replace node with bun in pantry-api: Dockerfile, CI and package scripts. Run bun test. Stop at a commit on  ││                                                  │
-│                                ││    bun/pantry-api.                                                                                             ││ WAITING ON PEOPLE                              1 │
-│                                ││                                                                                                                ││  invoice-export                        Alex · 3h │
-│                                ││  pantry-api  13:20                                                                                             ││                                                  │
-│                                ││    Swapped the base image to oven/bun:1.3 and moved the scripts to bun run. Running the test suite in three    ││  LANDED                                      3 ▸ │
-│                                ││    shards.                                                                                                     ││                                                  │
-│                                ││    ▸ 12 steps                                                                                                  ││                                                  │
-│                                ││                                                                                                                ││                                                  │
-│                                ││  pantry-api  13:31                                                                                             ││                                                  │
-│                                ││    Shard 1/3 passed. Shard 2/3 is running.                                                                     ││                                                  │
-│                                ││    ▸ 3 steps                                                                                                   ││                                                  │
+│                                ││    | Shard | Tests | Result |                                                                                  ││    bun-rollout · bun/queue-api · not merged      │
+│                                ││    |:--|--:|:--|                                                                                               ││                                                  │
+│                                ││    | 1/3 | 42 | passed |                                                                                       ││ WAITING ON PEOPLE                              1 │
+│                                ││    | 2/3 | 40 | running |                                                                                      ││  invoice-export                        Alex · 3h │
+│                                ││    | 3/3 | 41 | queued, waiting for a free runner before it starts |                                           ││                                                  │
+│                                ││                                                                                                                ││  LANDED                                      3 ▸ │
+│                                ││    - Dockerfile                                                                                                ││                                                  │
+│                                ││      - base image is oven/bun:1.3                                                                              ││                                                  │
+│                                ││      - lockfile regenerated                                                                                    ││                                                  │
+│                                ││    - CI                                                                                                        ││                                                  │
+│                                ││    - Package scripts                                                                                           ││                                                  │
+│                                ││    ▸ 5 steps                                                                                                   ││                                                  │
 │                                ││                                                                                                                ││                                                  │
 │                                ││ ╭─ read-only ────────────────────────────────────────────────────────────────────────────────────────────────╮ ││                                                  │
 │                                ││ │ Read-only. t takes it over in Rex, g gives it back, esc returns to Prism.                                  │ ││                                                  │
