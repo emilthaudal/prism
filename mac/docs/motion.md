@@ -24,7 +24,11 @@ It exits 1 when a step fails. A line reads:
 - **runs** (fails above 1): separate spells of change. A second spell means the state changed twice or two animations
   fought. A spell far smaller than the main one, such as the overlay scroller flashing at the window's edge, is left out.
 - **doubles** (fails): frames where part of the changed area already shows the end and part still shows the start, such
-  as a card in its old and new place at once. A step with `"crossfade": true` allows it.
+  as a card in its old and new place at once, and that show more than either end does: the edges in the changed area add up
+  to at least 1.15 times the busier end's (`doubleInk`). A slide over a plain background also matches one end or the other
+  at nearly every pixel (rows that left show background, rows that have not arrived show background), and so do the
+  fold and a list reorder; the edge test tells them apart, since a slide or a cross-fade shows one copy (0.9 to 1.03 on the
+  fixture) and two copies show nearly twice the edges. A step with `"crossfade": true` allows a double.
 - **moves** (fails with Reduce Motion): frames that are not a blend of start and end, meaning something slid or grew
   instead of fading.
 - **duration** (fails): a step with `expect` must last no longer than it asks for plus two 60 Hz frames, and at least 40 %

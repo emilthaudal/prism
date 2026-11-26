@@ -90,22 +90,31 @@ private func fade(_ t: Double, from: Double, to: Double) -> [UInt8] {
         #expect(report.steps[0].problems == ["hitch"])
     }
 
-    @Test func halfOldHalfNewIsADouble() {
-        let report = run(steps: [Timings.Step(name: "move", start: 1)]) { t in
-            if t < 1.01 { return [200, 200, 0, 0] }
-            if t < 1.03 { return [200, 200, 200, 200] }
-            return [0, 0, 200, 200]
-        }
+    /// A dark card on a light window moves from the first pixel to the last and shows in both places for a few frames.
+    private func twoPlaces(_ t: Double) -> [UInt8] {
+        if t < 1.01 { return [0, 200, 200, 200] }
+        if t < 1.03 { return [0, 200, 200, 0] }
+        return [200, 200, 200, 0]
+    }
+
+    @Test func aCardInItsOldAndNewPlaceIsADouble() {
+        let report = run(steps: [Timings.Step(name: "move", start: 1)], picture: twoPlaces)
         #expect(report.steps[0].doubles > 0)
         #expect(report.steps[0].problems.contains("double"))
     }
 
-    @Test func aNamedCrossfadeIsNotADouble() {
-        let report = run(steps: [Timings.Step(name: "move", start: 1, crossfade: true)]) { t in
-            if t < 1.01 { return [200, 200, 0, 0] }
-            if t < 1.03 { return [200, 200, 200, 200] }
-            return [0, 0, 200, 200]
+    @Test func aSlideOverAPlainBackgroundIsNotADouble() {
+        // Half its pixels match the start and half the end, as two copies would, but only one card is on screen.
+        let report = run(steps: [Timings.Step(name: "move", start: 1)]) { t in
+            if t < 1.01 { return [0, 200, 200, 200] }
+            if t < 1.03 { return [200, 0, 200, 200] }
+            return [200, 200, 0, 200]
         }
+        #expect(report.steps[0].doubles == 0)
+    }
+
+    @Test func aNamedCrossfadeIsNotADouble() {
+        let report = run(steps: [Timings.Step(name: "move", start: 1, crossfade: true)], picture: twoPlaces)
         #expect(report.steps[0].doubles == 0)
     }
 

@@ -20,6 +20,10 @@ public struct MotionCheck: Sendable {
     public var shortestShare = 0.4
     /// A run whose largest frame change is under this share of the step's largest is a side effect, not a replay.
     public var minorRun = 0.1
+    /// A double shows more than either end does: its edges in the changed area add up to at least this share of the busier
+    /// end's. A slide or a cross-fade never shows more than one end (about 0.9 to 1.03 on the fixture); two copies of a card
+    /// show nearly both.
+    public var doubleInk = 1.15
     /// The close, minimise and zoom buttons, in points from the top left: a screenshot draws them unlike the stream.
     static let windowControls = CGSize(width: 88, height: 36)
 
@@ -151,9 +155,12 @@ public struct MotionCheck: Sendable {
 
         let moved = (0..<before.count).filter { !mask[$0] && abs(Int(before[$0]) - Int(after[$0])) > tolerance }
         if !moved.isEmpty {
+            let region = around(moved, width: width, count: before.count)
+            let endInk = max(ink(before, region, width: width), ink(after, region, width: width))
             for f in window where !f.idle && f.t >= first && f.t < last {
                 let picture = pictures[f.picture]
-                if !step.crossfade, isDouble(picture, before: before, after: after, moved) { r.doubles += 1 }
+                if !step.crossfade, isDouble(picture, before: before, after: after, moved),
+                   Double(ink(picture, region, width: width)) >= doubleInk * Double(endInk) { r.doubles += 1 }
                 if isMove(picture, before: before, after: after, moved) { r.moves += 1 }
             }
         }
@@ -197,8 +204,10 @@ public struct MotionCheck: Sendable {
         return out
     }
 
-    /// Some of the changed area already shows the end and some still shows the start, with little in between: an
-    /// element in its old and its new place at once, or two changes landing a frame apart.
+    /// Some of the changed area already shows the end and some still shows the start, with little in between. On its own
+    /// this also fits a slide over a plain background (the background matches one end or the other wherever the rows are
+    /// not), so a frame is only counted when it also shows more than either end (`doubleInk`): an element in its old and
+    /// its new place at once.
     func isDouble(_ f: [UInt8], before: [UInt8], after: [UInt8], _ moved: [Int]) -> Bool {
         var old = 0, new = 0
         for i in moved {
@@ -224,6 +233,29 @@ public struct MotionCheck: Sendable {
             residual += abs(Double(f[i]) - Double(before[i]) - alpha * w)
         }
         return residual / Double(moved.count) > Double(tolerance) * 1.5
+    }
+
+    /// The pixels in `indices` and the ones next to them.
+    func around(_ indices: [Int], width: Int, count: Int) -> [Int] {
+        var inside = [Bool](repeating: false, count: count)
+        for i in indices {
+            let x = i % width
+            for d in [0, -1, 1, -width, width] {
+                let j = i + d
+                if j >= 0, j < count, !(d == -1 && x == 0), !(d == 1 && x == width - 1) { inside[j] = true }
+            }
+        }
+        return inside.indices.filter { inside[$0] }
+    }
+
+    /// How much edge a picture has over `region`: the grey steps to the right and down.
+    func ink(_ p: [UInt8], _ region: [Int], width: Int) -> Int {
+        var e = 0
+        for i in region {
+            if (i + 1) % width != 0, i + 1 < p.count { e += abs(Int(p[i + 1]) - Int(p[i])) }
+            if i + width < p.count { e += abs(Int(p[i + width]) - Int(p[i])) }
+        }
+        return e
     }
 
     /// Pixels that change while the script is quiet (a spinner, a working session's activity), with a pixel round them.
