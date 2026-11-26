@@ -361,22 +361,83 @@ struct Dot: View {
 /// The sidebar's working mark, as in the mockup (EMI-440): a ring with a quarter gap, stroked as wide as the tree lines
 /// in the track's lane colour, turning once a second. The system's spinner ignores the tint and reads grey and spoked.
 /// Under Reduce Motion the ring holds still; its gap still says "working" beside the dots.
+///
+/// The turning is a Core Animation animation, run by the render server: a TimelineView redrew every spinner from the app
+/// at the display's rate, which kept an idle window at 40 % CPU with a few sessions working.
 struct Spinner: View {
     var color: Color? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduce
 
     var body: some View {
-        TimelineView(.animation(paused: reduce)) { context in
-            let turn = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: Motion.spinPeriod)
-            Circle()
-                .inset(by: Theme.laneRail / 2)
-                .trim(from: 0, to: 0.75)
-                .stroke(color ?? .secondary, style: StrokeStyle(lineWidth: Theme.laneRail, lineCap: .round))
-                .rotationEffect(.degrees(reduce ? 0 : turn / Motion.spinPeriod * 360))
+        SpinnerRing(color: color ?? .secondary, turns: !reduce)
+            .frame(width: Theme.spinnerSize, height: Theme.spinnerSize)
+            .accessibilityElement()
+            .accessibilityLabel("Working")
+    }
+}
+
+/// The spinner's ring as a layer, so it turns without the app drawing a frame.
+private struct SpinnerRing: NSViewRepresentable {
+    var color: Color
+    var turns: Bool
+
+    func makeNSView(context: Context) -> RingView { RingView() }
+
+    func updateNSView(_ view: RingView, context: Context) {
+        view.ring.strokeColor = color.resolve(in: context.environment).cgColor
+        view.turns = turns
+    }
+
+    final class RingView: NSView {
+        let ring = CAShapeLayer()
+        var turns = true { didSet { if turns != oldValue { updateSpin() } } }
+
+        init() {
+            super.init(frame: .zero)
+            wantsLayer = true
+            ring.fillColor = nil
+            ring.lineWidth = Theme.laneRail
+            ring.lineCap = .round
+            ring.strokeEnd = 0.75
+            layer?.addSublayer(ring)
         }
-        .frame(width: Theme.spinnerSize, height: Theme.spinnerSize)
-        .accessibilityLabel("Working")
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        /// Flipped as SwiftUI is, so the arc starts at three o'clock and runs clockwise, as Circle().trim did.
+        override var isFlipped: Bool { true }
+
+        override func layout() {
+            super.layout()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            ring.bounds = bounds
+            ring.position = CGPoint(x: bounds.midX, y: bounds.midY)
+            ring.path = CGPath(ellipseIn: bounds.insetBy(dx: Theme.laneRail / 2, dy: Theme.laneRail / 2), transform: nil)
+            CATransaction.commit()
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            updateSpin()
+        }
+
+        /// Clockwise, once a period, every ring in step: each starts at the same phase of the media clock.
+        private func updateSpin() {
+            ring.removeAnimation(forKey: "spin")
+            guard turns, window != nil else { return }
+            let spin = CABasicAnimation(keyPath: "transform.rotation.z")
+            spin.fromValue = 0
+            spin.toValue = 2 * Double.pi
+            spin.duration = Motion.spinPeriod
+            spin.repeatCount = .infinity
+            spin.isRemovedOnCompletion = false
+            let now = CACurrentMediaTime()
+            spin.beginTime = ring.convertTime(now - now.truncatingRemainder(dividingBy: Motion.spinPeriod), from: nil)
+            ring.add(spin, forKey: "spin")
+        }
     }
 }
 
