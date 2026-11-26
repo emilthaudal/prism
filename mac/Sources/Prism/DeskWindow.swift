@@ -105,6 +105,7 @@ struct MiddleColumn: View {
                 // with a question's options, and an overlay at a fixed height covered them.
                 notice
                 ComposerView(store: store, model: model)
+                    .layoutPriority(1)
                     .dropReceiver { model.attach($0) }
             }
         }
