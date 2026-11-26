@@ -67,15 +67,17 @@ The skills are written for one person's way of working (the person is called Emi
 
 ## Settings
 
-All optional, as environment variables:
+All optional, as environment variables. `tracks` and `prism` also read them from `$TRACKS_HOME/env`, one `KEY=VALUE` per line (`#` starts a comment), so the launchd jobs, a server Prism.app starts, and your shell all see the same settings; a variable set in the environment wins over the file.
 
 | Variable | What |
 |---|---|
 | `TRACKS_HOME` | Where `tracks.db` and the cards live (default `~/.local/state/tracks`). |
 | `TRACKS_DEFAULT_DIR` | The directory a new track starts in (default `~/Developer`). |
 | `TRACKS_ISSUE_URLS` | Where ticket keys in `links:` open, as `PROJECT=URL` pairs with `*` for every other project: `EMI=https://linear.app/you/issue/,*=https://you.atlassian.net/browse/`. Without it, keys are not links. |
-| `TRACKS_GH_ACCOUNTS` | For more than one `gh` login: which login `tracks check` uses, as `owner=login` or `~/dir=login` pairs: `acme=me-at-acme,~/Developer/acme=me-at-acme`. Without it, gh's own login. |
+| `TRACKS_GH_ACCOUNTS` | For more than one `gh` login: which login `tracks check` uses, as `owner=login` or `~/dir=login` pairs: `acme=me-at-acme,~/Developer/acme=me-at-acme`, and `*=login` for every other repo. Without it, gh's own login. |
 | `TRACKS_LEAN_SKILLS_OFF`, `TRACKS_LEAN_PLUGINS_OFF` | Skills and plugins (`name@marketplace`) the sessions the desk starts turn off, comma-separated, to cut their start-up context. |
+| `TRACKS_DIR_PLUGINS` | Plugins only some repos use, as `DIR=name@marketplace` pairs: `~/Developer/acme=acme@acme`. Such a plugin stays on for tracks under DIR and is off everywhere else. |
+| (not a variable) the `prism-work` skill | Rules that only fit your own setup (review queues, release tools, where work repos live) go in a skill at `~/.claude/skills/prism-work/SKILL.md`, outside this repo; the track and desk skills read it when it is there. |
 
 ## Layout
 

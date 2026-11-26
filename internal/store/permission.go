@@ -58,7 +58,13 @@ func (s *Store) AddPromptQuestion(session, question string, options, links []str
 		}
 		ok = true
 		id, err = res.LastInsertId()
-		return err
+		if err != nil {
+			return err
+		}
+		if track.Valid {
+			return closeConfirmDuplicates(tx, track.Int64, s.now())
+		}
+		return nil
 	})
 	return id, ok, err
 }

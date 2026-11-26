@@ -58,3 +58,26 @@ func TestTheEnvironmentAddsSkillsAndPluginsToTurnOff(t *testing.T) {
 		t.Errorf("datadog stays on: %+v", doc.EnabledPlugins)
 	}
 }
+
+func TestADirPluginStaysOnOnlyUnderItsDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("TRACKS_LEAN_SKILLS_OFF", "")
+	t.Setenv("TRACKS_LEAN_PLUGINS_OFF", "")
+	t.Setenv("TRACKS_DIR_PLUGINS", "~/Developer/acme=acme@acme, ~/Developer/acme=ops@acme,/elsewhere=ops@acme")
+	doc := leanDoc(t, filepath.Join(home, "Developer", "acme", "shop-api"))
+	if len(doc.EnabledPlugins) != 0 {
+		t.Errorf("a plugin is off under its own dir: %+v", doc.EnabledPlugins)
+	}
+	doc = leanDoc(t, filepath.Join(home, "Developer", "acme-other"))
+	if on, ok := doc.EnabledPlugins["acme@acme"]; !ok || on {
+		t.Errorf("acme stays on outside its dir: %+v", doc.EnabledPlugins)
+	}
+	if on, ok := doc.EnabledPlugins["ops@acme"]; !ok || on {
+		t.Errorf("ops stays on outside its dirs: %+v", doc.EnabledPlugins)
+	}
+	doc = leanDoc(t, "/elsewhere/repo")
+	if _, ok := doc.EnabledPlugins["ops@acme"]; ok {
+		t.Errorf("ops is off under its second dir: %+v", doc.EnabledPlugins)
+	}
+}

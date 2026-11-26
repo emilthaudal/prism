@@ -187,21 +187,26 @@ func ghAccount(remote string) string {
 }
 
 // ghAccountFor picks the login for a check: the repo it names, else the origin remote, else
-// the directory dir lives in, even when dir itself is not a git repo. "" means gh's own login.
+// the directory dir lives in, even when dir itself is not a git repo, else the login
+// TRACKS_GH_ACCOUNTS gives * (for when gh's active login is not the one most repos use).
+// "" means gh's own login.
 func ghAccountFor(dir string, c check, remote string) string {
+	owners, dirs := ghRules()
 	if repo, _, ok := strings.Cut(c.arg, "#"); ok && c.kind == "pr" {
-		return ghAccount("github.com/" + repo)
+		if a := ghAccount("github.com/" + repo); a != "" {
+			return a
+		}
+		return owners["*"]
 	}
 	if a := ghAccount(remote); a != "" {
 		return a
 	}
-	_, dirs := ghRules()
 	for _, d := range dirs {
 		if dir == d[0] || strings.HasPrefix(dir, d[0]+string(filepath.Separator)) {
 			return d[1]
 		}
 	}
-	return ""
+	return owners["*"]
 }
 
 func withStderr(err error) error {

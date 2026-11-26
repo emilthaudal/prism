@@ -313,3 +313,55 @@ func TestMigrationTo13MarksEarlierAgentAnswersDelivered(t *testing.T) {
 		t.Error("not marked delivered")
 	}
 }
+
+// A "Confirm in …" card ask and the Elicitation hook's decision are one confirm: only the
+// decision stays, whichever arrives first.
+func TestAConfirmAskIsNotAskedTwice(t *testing.T) {
+	const ask = "Confirm in Gatekeeper: pantry #429 to production — pop-up in this track's pane"
+	open := func(s *Store) (n int) {
+		qs, err := s.OpenQuestions()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(qs)
+	}
+	setup := func(t *testing.T) *Store {
+		s := newStore(t)
+		mustTrack(t, s, "alpha")
+		if _, err := s.db.Exec(`INSERT INTO sessions (id, track_id, owner, host, cwd, created_at, updated_at) VALUES ('s1', (SELECT id FROM tracks WHERE name = 'alpha'), 'desk', 'background', '', ?, ?)`,
+			fmtTime(s.now()), fmtTime(s.now())); err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	prompt := func(s *Store) {
+		if _, ok, err := s.AddPromptQuestion("s1", "gatekeeper: Confirm", []string{"Done, continue", "Decline"}, []string{"https://x/1"}); err != nil || !ok {
+			t.Fatalf("prompt: %v %v", ok, err)
+		}
+	}
+	t.Run("ask first", func(t *testing.T) {
+		s := setup(t)
+		if _, err := s.Card("alpha", CardUpdate{Asks: []string{ask}, Where: ptr("w")}); err != nil {
+			t.Fatal(err)
+		}
+		eq(t, "before the prompt", open(s), 1)
+		prompt(s)
+		eq(t, "after the prompt", open(s), 1)
+	})
+	t.Run("prompt first", func(t *testing.T) {
+		s := setup(t)
+		prompt(s)
+		if _, err := s.Card("alpha", CardUpdate{Asks: []string{ask}, Where: ptr("w")}); err != nil {
+			t.Fatal(err)
+		}
+		eq(t, "ask and prompt", open(s), 1)
+	})
+	t.Run("another ask stays", func(t *testing.T) {
+		s := setup(t)
+		prompt(s)
+		if _, err := s.Card("alpha", CardUpdate{Asks: []string{ask, "Go? 1) yes 2) no Recommend: 1"}, Where: ptr("w")}); err != nil {
+			t.Fatal(err)
+		}
+		eq(t, "the other ask and the prompt", open(s), 2)
+	})
+}

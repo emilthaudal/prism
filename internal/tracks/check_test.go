@@ -438,6 +438,25 @@ echo '{"state":"OPEN","reviewDecision":"APPROVED","statusCheckRollup":[{"status"
 	}
 }
 
+func TestTheStarLoginIsTheFallbackAfterOwnersAndDirs(t *testing.T) {
+	t.Setenv("TRACKS_GH_ACCOUNTS", "acme=work, /w=work, *=personal")
+	for _, tc := range []struct {
+		dir, remote string
+		c           check
+		want        string
+	}{
+		{"/x/svc", "git@github.com:acme/svc.git", check{"ci", "main", "green"}, "work"},
+		{"/w/svc", "git@github.com:someone/svc.git", check{"ci", "main", "green"}, "work"},
+		{"/x/svc", "git@github.com:someone/svc.git", check{"ci", "main", "green"}, "personal"},
+		{"/x/svc", "", check{"pr", "acme/svc#4", "approved"}, "work"},
+		{"/w/svc", "", check{"pr", "someone/svc#4", "approved"}, "personal"},
+	} {
+		if got := ghAccountFor(tc.dir, tc.c, tc.remote); got != tc.want {
+			t.Errorf("%s %s %+v: %q, want %q", tc.dir, tc.remote, tc.c, got, tc.want)
+		}
+	}
+}
+
 func TestGhEvalWithoutAMappingUsesGhsOwnLogin(t *testing.T) {
 	th, bin := setup(t)
 	t.Setenv("TRACKS_GH_ACCOUNTS", "")
