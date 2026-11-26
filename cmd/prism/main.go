@@ -8,5 +8,6 @@ import (
 )
 
 func main() {
+	tracks.LoadEnvFile()
 	os.Exit(tracks.RunPrism(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }

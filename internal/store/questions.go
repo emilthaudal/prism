@@ -442,6 +442,17 @@ func mirrorAsks(tx *wtx, trackID int64, now time.Time) error {
 		if a.Kind != kindAgent {
 			continue
 		}
+		if isConfirmAsk(a.Text) {
+			// The elicitation decision is the one decision for this confirm: a track that also
+			// wrote a card ask for it would put it in front of Emil twice.
+			dup, err := hasOpenElicitation(tx, trackID)
+			if err != nil {
+				return err
+			}
+			if dup {
+				continue
+			}
+		}
 		var n int
 		if err := tx.QueryRow(`SELECT count(*) FROM questions WHERE ask_id = ?`, a.ID).Scan(&n); err != nil {
 			return err
@@ -465,6 +476,40 @@ func mirrorAsks(tx *wtx, trackID int64, now time.Time) error {
 	}
 	_, err = tx.Exec(`UPDATE questions SET closed_at = ? WHERE track_id = ? AND ask_id IS NOT NULL AND closed_at IS NULL
 		AND ask_id NOT IN (SELECT id FROM asks WHERE track_id = ? AND closed_at IS NULL)`, fmtTime(now), trackID, trackID)
+	if err != nil {
+		return err
+	}
+	return closeConfirmDuplicates(tx, trackID, now)
+}
+
+// confirmAskPrefix starts the card ask a session writes for an MCP server's confirm page
+// ("Confirm in Gatekeeper: …"), which the Elicitation hook already asks as a decision.
+const confirmAskPrefix = "Confirm in "
+
+// isConfirmAsk is whether a card ask is such a confirm.
+func isConfirmAsk(text string) bool {
+	return strings.HasPrefix(strings.TrimSpace(text), confirmAskPrefix)
+}
+
+// openElicitationWhere matches a track's open MCP approval question, which the Elicitation hook added.
+const openElicitationWhere = `track_id = ? AND from_kind = 'agent' AND session_id IS NOT NULL AND session_id != '' AND ask_id IS NULL
+	AND answered_at IS NULL AND closed_at IS NULL AND options LIKE '%"Done, continue"%'`
+
+func hasOpenElicitation(tx *wtx, trackID int64) (bool, error) {
+	var n int
+	err := tx.QueryRow(`SELECT count(*) FROM questions WHERE `+openElicitationWhere, trackID).Scan(&n)
+	return n > 0, err
+}
+
+// closeConfirmDuplicates closes the track's open confirm card asks while an open elicitation
+// decision covers the same confirm.
+func closeConfirmDuplicates(tx *wtx, trackID int64, now time.Time) error {
+	dup, err := hasOpenElicitation(tx, trackID)
+	if err != nil || !dup {
+		return err
+	}
+	_, err = tx.Exec(`UPDATE questions SET closed_at = ? WHERE track_id = ? AND ask_id IS NOT NULL AND answered_at IS NULL AND closed_at IS NULL
+		AND question LIKE ?`, fmtTime(now), trackID, confirmAskPrefix+"%")
 	return err
 }
 

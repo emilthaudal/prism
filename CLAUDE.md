@@ -1,6 +1,6 @@
 # tracks: how we build it
 
-Emil decided on 2026-11-24 to build tracks and the desk with more risk and faster iteration: fewer adversarial reviews, and more judging by how it feels in use. This overrides the tier process in `~/.claude/CLAUDE.md` for this repo only.
+Emil decided on 2026-11-24 to build tracks and the desk with more risk and faster iteration: fewer adversarial reviews, and more judging by how it feels in use. This overrides the default tier process (in a global `~/.claude/CLAUDE.md`, else the Tiers section of `skill/track/SKILL.md`) for this repo only.
 
 - **Pane, skills, prompts, docs, keys, wording:** tier 1. Make the change, read your own diff, merge, and Emil uses it.
 - **Code that types into agents, writes `tracks.db` or runs unattended (hooks, launchd, resume):** one read-only review round. Act-on covers only what is hard to undo: losing or corrupting `tracks.db`, the desk acting on a track it doesn't own, or anything that reaches outside tracks (a merge, a deploy, a push, another repo). Every other finding is a note in the PR body, not a fix round. No second round, and no probing end-to-end runs.
