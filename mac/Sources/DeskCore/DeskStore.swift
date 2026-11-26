@@ -376,6 +376,7 @@ public final class DeskStore {
         }
     }
 
+    public func stopLoop(_ trackID: String) async { await send(.stopLoop(track: trackID)) }
     public func giveBack(_ sessionID: String) async { await send(.giveback(session: sessionID)) }
     public func stop(_ sessionID: String) async { await send(.stop(session: sessionID)) }
     /// Sets a track's mode. A third focus track is refused by the server, and `focusSwap` then holds
