@@ -317,7 +317,7 @@ func (h *hub) handler(token string) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, v)
 	})
-	act := func(kind string) http.HandlerFunc {
+	act := func(kind string, fixed ...string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, serveBodyMax))
 			if err != nil {
@@ -331,6 +331,9 @@ func (h *hub) handler(token string) http.Handler {
 			action := r.PathValue("action")
 			if kind == "desk" {
 				action = path.Base(r.URL.Path) // messages or restart
+			}
+			if len(fixed) > 0 {
+				action = fixed[0]
 			}
 			code, reply, err := h.src.act(r.Context(), kind, r.PathValue("id"), action, body)
 			if err != nil {
@@ -352,6 +355,7 @@ func (h *hub) handler(token string) http.Handler {
 	mux.HandleFunc("POST /v1/questions/{id}/{action}", act("questions"))
 	mux.HandleFunc("POST /v1/sessions/{id}/{action}", act("sessions"))
 	mux.HandleFunc("POST /v1/tracks/{id}/{action}", act("tracks"))
+	mux.HandleFunc("POST /v1/tracks/{id}/loop/stop", act("tracks", "loop/stop"))
 	mux.HandleFunc("POST /v1/handled/{id}/{action}", act("handled"))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, errorf(http.StatusNotFound, "no route %s %s", r.Method, r.URL.Path))

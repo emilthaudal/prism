@@ -6,7 +6,7 @@ A loop is a session the desk starts to work on one goal unattended, while Emil s
 
 - `tracks start 'request' --loop [--until HH:MM | --for 8h] [--turns N] [--budget PCT]`: desk only. Defaults: 8 hours, 20 turns, a budget of 70% of the five-hour usage window, model sonnet unless `--model`, mode background. `--until` is the next time the clock reads HH:MM.
 - `tracks loop`: one line per loop: `TRACK  turn K/N  until HH:MM  running | paused until HH:MM | ended: why`.
-- `tracks loop stop NAME`: ends the loop after its current turn (a paused loop at the watch's next look). The session is not stopped.
+- `tracks loop stop NAME`: ends the loop after its current turn (a paused loop at the watch's next look). The session is not stopped. `POST /v1/tracks/{id}/loop/stop` does the same for the app.
 - The serve snapshot's session carries `loop` (docs/serve-api.md).
 
 ## How a loop runs
@@ -15,13 +15,15 @@ The session's first prompt is `/track NAME` and the loop's rules: each turn is o
 
 At each stop the desk's watch (inside `prism server`, or `tracks wait --desk`) decides by itself, spending no desk tokens:
 
-1. Ends the loop when the answer's last `LOOP:` line says done, a stop was asked, all turns ran, or the deadline passed.
+1. Ends the loop when the answer's last non-empty line is `LOOP: done - …` (a marker anywhere else does not count), a stop was asked, all turns ran, or the deadline passed.
 2. Pauses it when usage.json says the five-hour usage is at or over the budget, or the seven-day usage at or over 95%, until that window resets; it ends instead when the reset falls after the deadline. Usage older than an hour, or a window whose reset passed, counts as unknown and never pauses.
 3. Otherwise sends the next turn as a note: `Continue the loop: iteration K of N, until HH:MM. <the rules in one line>`, through the same path as `tracks send` (held while the session works, compacted first past 250k tokens).
 
 A turn that ends in an error (the reaper's cut-off turns, including a usage-limit cut once the limit resets) is tried again with the same iteration, up to 3 times in a row; the fourth ends the loop. A usage-limit block of a loop session is not reported to the desk.
 
-The desk hears of a loop once: its usual `done` event when the loop ends, with the text starting `[loop ended after K of N turns: why]`. The handled log gets a `noted` entry when a loop starts and when it ends, none per turn.
+If the next note cannot be delivered, the loop ends with `could not deliver the next note: ERR` and the done is forwarded. A watch that starts (after a restart of the server) finds a loop whose file says running but whose session stopped with no note held, and decides its next turn then.
+
+The desk hears of a loop once: its usual `done` event when the loop ends, with the text starting `[loop ended after K of N turns: why]`; when the session ended it, why quotes its words, cut to 200 characters. The handled log gets a `noted` entry when a loop starts and when it ends, none per turn.
 
 ## Safety
 
@@ -29,4 +31,6 @@ The desk hears of a loop once: its usual `done` event when the loop ends, with t
 - **Nothing waits on a sleeping person.** A permission prompt or an MCP approval of a loop session is denied after 2 minutes unanswered, with text telling the session Emil is away and to find a way inside its folder that needs no new permission or skip the step and log it. Nothing is ever allowed automatically; the desk and Emil can still answer within those 2 minutes.
 - **Same stops as any desk session.** The loop rules forbid merges, pushes, deploys and installs, and the session runs with the settings and hooks of every desk session.
 - **Emil wins.** Typing into the session takes it over and ends the loop; `tracks loop stop` ends it after the current turn.
+- **Awake.** While a loop runs or is paused, the watch inside `prism server` holds one `caffeinate -i` child, so the Mac does not idle-sleep; it stops when the last loop ends or the server exits (a no-op without `caffeinate`).
+- **One session.** The loop file records its session id once known; a file whose id differs from the session at hand never applies, and `tracks close` or a plain `tracks start` on the name removes a stale one.
 - **No schema change.** Loop state is `$TRACKS_HOME/loops/TRACK.json`; a stop request is `TRACK.stop` beside it, so it never races the watch's writes.

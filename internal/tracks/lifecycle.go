@@ -124,6 +124,7 @@ func closeTrack(name string, now time.Time, self string) (dest, note string, err
 	if err != nil {
 		return "", "", err
 	}
+	dropLoopFiles(name)
 	note = "Closed " + name
 	if sess != "" {
 		ended, why, rerr := endSession(sess, name, self)

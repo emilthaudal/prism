@@ -665,6 +665,15 @@ func (l *liveSource) track(id, action, mode, swap string) (int, any, error) {
 		if err := open([]string{name}, io.Discard, palette{}); err != nil {
 			return 0, nil, err
 		}
+	case "loop/stop":
+		msg, err := requestLoopStop(name)
+		if errors.Is(err, errNoLoop) {
+			return 0, nil, errorf(http.StatusNotFound, "%s", err.Error())
+		}
+		if err != nil {
+			return 0, nil, err
+		}
+		return http.StatusOK, map[string]string{"status": msg}, nil
 	default:
 		return 0, nil, errorf(http.StatusNotFound, "no action %s on a track", action)
 	}
