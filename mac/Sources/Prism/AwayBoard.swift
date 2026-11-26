@@ -104,7 +104,7 @@ struct AwayTimelineRow: View {
             VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(entry.title).font(.body.weight(.medium)).lineLimit(1).truncationMode(.tail)
                 if let detail = entry.detail {
-                    Text(detail).font(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                    Text(detail).font(.subheadline).foregroundStyle(.secondary).lineLimit(2).truncationMode(.tail)
                 }
             }
             Spacer(minLength: Space.s)
