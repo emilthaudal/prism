@@ -29,9 +29,11 @@ const k = 1024 / 824;
 const layer = (defs, body) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>${defs}</defs>` +
   `<g transform="translate(512 512) scale(${k.toFixed(4)}) translate(-512 -512)">${body}</g></svg>`;
-// Blur filters and the mask cover the whole canvas. The default filter region is the shape's box plus a tenth, which
+// Blur filters and the mask cover the whole canvas, and a blurred shape sits in a group with `pad`, an invisible
+// rectangle of that size: WebKit cuts a blur off at the box of what it blurs, whatever region the filter names, which
 // cut the beam's glow off in a straight line above and below it.
 const all = 'x="-300" y="-300" width="1624" height="1624"';
+const pad = `<rect ${all} fill="#FFFFFF" fill-opacity="0"/>`;
 const blur = (id, sd) => `<filter id="${id}" filterUnits="userSpaceOnUse" ${all}><feGaussianBlur stdDeviation="${sd}"/></filter>`;
 
 function glows() {
@@ -53,7 +55,7 @@ function light() {
   const inx = xl(by), dx = inx - 100, dy = -90, x2 = inx + dx * 0.1, y2 = by + dy * 0.1, y1 = by + 90 + 90 * 60 / dx;
   const mask = `<mask id="outside" maskUnits="userSpaceOnUse" ${all}><rect ${all} fill="#FFFFFF"/>${poly(T, '#000000')}</mask>`;
   const beam = `<g mask="url(#outside)">` +
-    `<line x1="40" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FFFFFF" stroke-width="96" stroke-opacity=".16" filter="url(#gw)"/>` +
+    `<g filter="url(#gw)">${pad}<line x1="40" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FFFFFF" stroke-width="96" stroke-opacity=".16"/></g>` +
     `<line x1="40" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FFFFFF" stroke-width="60"/></g>`;
   return layer(mask + blur('gw', 22), bands + beam);
 }
