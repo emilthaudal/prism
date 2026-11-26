@@ -324,8 +324,16 @@ func permissionCmd(in io.Reader, out io.Writer) {
 	if err != nil || !ok {
 		return
 	}
-	q, ok := awaitPromptAnswer(h.SessionID, id, permissionWait())
+	wait, timeoutNote := permissionWait(), "timed out: answer with claude attach "+shortID(h.SessionID)
+	loop := isLoopSession(h.SessionID)
+	if loop {
+		wait, timeoutNote = loopPermissionWait, loopDenyNote
+	}
+	q, ok := awaitPromptAnswerNote(h.SessionID, id, wait, timeoutNote)
 	if !ok {
+		if loop && loopDenied(id) {
+			writePromptDecision(out, id, map[string]any{"hookEventName": "PermissionRequest", "decision": map[string]any{"behavior": "deny", "message": loopDenyText}}, nil)
+		}
 		return
 	}
 	writePromptDecision(out, id, map[string]any{"hookEventName": "PermissionRequest", "decision": permissionDecision(q, h.Suggestions)}, nil)
@@ -336,6 +344,11 @@ func permissionCmd(in io.Reader, out io.Writer) {
 // before wait ran out: then it closes the question, so the session's own prompt stays for
 // claude attach. Emil taking the session over closes it at once.
 func awaitPromptAnswer(session string, id int64, wait time.Duration) (q store.Question, ok bool) {
+	return awaitPromptAnswerNote(session, id, wait, "timed out: answer with claude attach "+shortID(session))
+}
+
+// awaitPromptAnswerNote is awaitPromptAnswer with the note a question that timed out closes with.
+func awaitPromptAnswerNote(session string, id int64, wait time.Duration, timeoutNote string) (q store.Question, ok bool) {
 	deadline := time.Now().Add(wait)
 	for {
 		time.Sleep(permissionPoll)
@@ -361,7 +374,7 @@ func awaitPromptAnswer(session string, id int64, wait time.Duration) (q store.Qu
 		case time.Now().After(deadline):
 			var closed bool
 			err := withBareStore(func(st *store.Store) (err error) {
-				closed, err = st.TimeOutQuestion(id, "timed out: answer with claude attach "+shortID(session))
+				closed, err = st.TimeOutQuestion(id, timeoutNote)
 				return err
 			})
 			if err != nil || closed {

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	startUsage = `usage: tracks start "request" [--dir D] [--model sonnet|opus|haiku] [--name NAME] [--mode focus|background|parked]`
+	startUsage = `usage: tracks start "request" [--dir D] [--model sonnet|opus|haiku] [--name NAME] [--mode focus|background|parked] [--loop [--until HH:MM | --for 8h] [--turns N] [--budget PCT]]`
 
 	// defaultStartMode is the mode of a track nobody chose one for: focus is Emil's, so it is
 	// never the default (EMI-423).
@@ -116,9 +116,24 @@ func deskAnswer(args []string, out io.Writer) error {
 // in a Rex session of its own, which Rex is not told to switch to. Every start is logged as
 // the desk's, so u in the handled log can take it back.
 func startCmd(args []string, out io.Writer) error {
-	pos, fl, err := leadFlags(args, "--dir", "--model", "--name", "--mode")
+	loop := slices.Contains(args, "--loop")
+	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--loop" })
+	pos, fl, err := leadFlags(args, "--dir", "--model", "--name", "--mode", "--until", "--for", "--turns", "--budget")
 	if err != nil || len(pos) != 1 {
 		return errors.New(startUsage)
+	}
+	var loopAt *loopState
+	if loop {
+		l, err := loopFlags(fl, loopNow())
+		if err != nil {
+			return fmt.Errorf("%w\n%s", err, startUsage)
+		}
+		loopAt = &l
+		if fl["--model"] == "" {
+			fl["--model"] = loopModel
+		}
+	} else if slices.ContainsFunc([]string{"--until", "--for", "--turns", "--budget"}, func(f string) bool { _, ok := fl[f]; return ok }) {
+		return errors.New("--until, --for, --turns and --budget go with --loop\n" + startUsage)
 	}
 	goal, model := cleanRequest(pos[0]), fl["--model"]
 	named, hasName := fl["--name"]
@@ -164,7 +179,10 @@ func startCmd(args []string, out io.Writer) error {
 		return errors.New("refused: " + strings.ReplaceAll(why, "thread", "track"))
 	}
 	if desk {
-		return deskStartCmd(goal, dir, model, named, mode, out)
+		return deskStartCmd(goal, dir, model, named, mode, loopAt, out)
+	}
+	if loop {
+		return errors.New("refused: --loop is the desk's: a loop runs unattended in the background")
 	}
 	name := named
 	if hasName {
