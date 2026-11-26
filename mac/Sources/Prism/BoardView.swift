@@ -311,8 +311,10 @@ struct QuestionCard: View {
                     .lineLimit(1)
                     .fixedSize()
             }
+            // The card is a summary: a long ask reads in full in the composer.
             Text(Theme.questionMarkdown(question.question))
                 .font(.prismQuestion)
+                .lineLimit(6)
                 .fixedSize(horizontal: false, vertical: true)
             if let evidence = question.evidence, !evidence.isEmpty {
                 VStack(alignment: .leading, spacing: Space.xs) {

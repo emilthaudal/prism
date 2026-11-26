@@ -93,7 +93,9 @@ public struct BoardPlan: Equatable, Sendable {
         parts.removeAll { $0.0 == 0 }
         digest = parts.map { "\($0.0) \($0.1)" }
         let rows = Sidebar(s).sections
-        briefs = rows.filter { ["focus", "background"].contains($0.mode) }.flatMap(\.tracks).map { row in
+        // A track with a live loop has its card under Loops already.
+        let looping = Set(LoopBrief.all(s).compactMap { $0.track?.id })
+        briefs = rows.filter { ["focus", "background"].contains($0.mode) }.flatMap(\.tracks).filter { !looping.contains($0.track.id) }.map { row in
             TrackBrief(
                 track: row.track,
                 chip: row.chip,
