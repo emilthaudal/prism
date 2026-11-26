@@ -1,17 +1,54 @@
 {
   "fill" : {
-    "solid" : "srgb:0.07843,0.07843,0.09412,1.00000"
+    "linear-gradient" : [
+      "srgb:0.17255,0.17255,0.21176,1.00000",
+      "srgb:0.05490,0.05490,0.07451,1.00000"
+    ]
   },
   "groups" : [
     {
       "layers" : [
         {
-          "image-name" : "split.png",
-          "name" : "split"
+          "image-name" : "prism.png",
+          "name" : "prism"
         }
       ],
       "shadow" : {
         "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "light.png",
+          "name" : "light"
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "glows.png",
+          "name" : "glows"
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
         "opacity" : 0.5
       },
       "translucency" : {
