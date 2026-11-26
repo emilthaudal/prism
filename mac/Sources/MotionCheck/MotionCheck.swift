@@ -20,6 +20,10 @@ public struct MotionCheck: Sendable {
     public var shortestShare = 0.4
     /// A run whose largest frame change is under this share of the step's largest is a side effect, not a replay.
     public var minorRun = 0.1
+    /// A double shows more than either end does: its edges in the changed area add up to at least this share of the busier
+    /// end's. A slide or a cross-fade never shows more than one end (about 0.9 to 1.03 on the fixture); two copies of a card
+    /// show nearly both.
+    public var doubleInk = 1.15
     /// The close, minimise and zoom buttons, in points from the top left: a screenshot draws them unlike the stream.
     static let windowControls = CGSize(width: 88, height: 36)
 
@@ -69,12 +73,14 @@ public struct MotionCheck: Sendable {
         let frames = recording.frames.sorted { $0.t < $1.t }
         let complete = frames.filter { !$0.idle }
         let firstStep = timings.steps.first?.start ?? timings.end
+        // The recorder's frame interval: a change is only seen to start and end to within one of them.
+        let film = Self.nominalInterval(frames.map(\.t))
         let mask = noiseMask(complete.filter { $0.t < firstStep }.map { pictures[$0.picture] }, width: recording.width, height: recording.height)
 
         var results: [StepResult] = []
         for (i, step) in timings.steps.enumerated() {
             let end = i + 1 < timings.steps.count ? timings.steps[i + 1].start : timings.end
-            results.append(checkStep(step, until: end, frames: frames, pictures: pictures, mask: mask, width: recording.width, missed: missedFrames(timings), reduceMotion: timings.reduceMotion))
+            results.append(checkStep(step, until: end, frames: frames, pictures: pictures, mask: mask, width: recording.width, missed: missedFrames(timings), reduceMotion: timings.reduceMotion, film: film))
         }
         var endClean: Bool?
         var endChange: Change?
@@ -91,7 +97,7 @@ public struct MotionCheck: Sendable {
         return Report(steps: results, endClean: endClean, endChange: endChange, nominalInterval: nominal)
     }
 
-    private func checkStep(_ step: Timings.Step, until end: Double, frames: [Recording.Frame], pictures: [[UInt8]], mask: [Bool], width: Int, missed: [(at: Double, by: Double)], reduceMotion: Bool) -> StepResult {
+    private func checkStep(_ step: Timings.Step, until end: Double, frames: [Recording.Frame], pictures: [[UInt8]], mask: [Bool], width: Int, missed: [(at: Double, by: Double)], reduceMotion: Bool, film: Double) -> StepResult {
         var r = StepResult(name: step.name, expect: step.expect)
         guard let startIndex = frames.lastIndex(where: { $0.t <= step.start && !$0.idle }) ?? frames.firstIndex(where: { !$0.idle }) else {
             r.problems.append("no frames")
@@ -143,7 +149,7 @@ public struct MotionCheck: Sendable {
         r.late = r.lateIntervals.count
 
         guard !step.continuous, let first = runs.first?.lowerBound, let last = runs.last?.upperBound else {
-            r.problems = problems(r, step: step, reduceMotion: reduceMotion)
+            r.problems = problems(r, step: step, reduceMotion: reduceMotion, film: film)
             return r
         }
         // Inside a run, a frame equal to the one before is a stall.
@@ -151,17 +157,20 @@ public struct MotionCheck: Sendable {
 
         let moved = (0..<before.count).filter { !mask[$0] && abs(Int(before[$0]) - Int(after[$0])) > tolerance }
         if !moved.isEmpty {
+            let region = around(moved, width: width, count: before.count)
+            let endInk = max(ink(before, region, width: width), ink(after, region, width: width))
             for f in window where !f.idle && f.t >= first && f.t < last {
                 let picture = pictures[f.picture]
-                if !step.crossfade, isDouble(picture, before: before, after: after, moved) { r.doubles += 1 }
+                if !step.crossfade, isDouble(picture, before: before, after: after, moved),
+                   Double(ink(picture, region, width: width)) >= doubleInk * Double(endInk) { r.doubles += 1 }
                 if isMove(picture, before: before, after: after, moved) { r.moves += 1 }
             }
         }
-        r.problems = problems(r, step: step, reduceMotion: reduceMotion)
+        r.problems = problems(r, step: step, reduceMotion: reduceMotion, film: film)
         return r
     }
 
-    private func problems(_ r: StepResult, step: Timings.Step, reduceMotion: Bool) -> [String] {
+    private func problems(_ r: StepResult, step: Timings.Step, reduceMotion: Bool, film: Double) -> [String] {
         var p: [String] = []
         if r.late > 0 || r.duplicates > 0 { p.append("hitch") }
         if !step.continuous && r.runs > 1 { p.append("played \(r.runs) times") }
@@ -170,8 +179,10 @@ public struct MotionCheck: Sendable {
         if !r.settled { p.append("still moving at the next step") }
         if let expect = step.expect, !step.continuous {
             let dur = r.duration ?? 0
-            let tooLong = dur > expect + lateInterval
-            let tooShort = !reduceMotion && expect > 0 && dur < expect * shortestShare
+            // The film measures the change to within a frame of its own at each end: 8 ms at the recorder's usual 120 fps, 33 ms
+            // when other work on the Mac holds it to 30.
+            let tooLong = dur > expect + lateInterval + film
+            let tooShort = !reduceMotion && expect > 0 && dur < expect * shortestShare - film
             if tooLong || tooShort { p.append("duration") }
         }
         return p
@@ -197,8 +208,10 @@ public struct MotionCheck: Sendable {
         return out
     }
 
-    /// Some of the changed area already shows the end and some still shows the start, with little in between: an
-    /// element in its old and its new place at once, or two changes landing a frame apart.
+    /// Some of the changed area already shows the end and some still shows the start, with little in between. On its own
+    /// this also fits a slide over a plain background (the background matches one end or the other wherever the rows are
+    /// not), so a frame is only counted when it also shows more than either end (`doubleInk`): an element in its old and
+    /// its new place at once.
     func isDouble(_ f: [UInt8], before: [UInt8], after: [UInt8], _ moved: [Int]) -> Bool {
         var old = 0, new = 0
         for i in moved {
@@ -224,6 +237,29 @@ public struct MotionCheck: Sendable {
             residual += abs(Double(f[i]) - Double(before[i]) - alpha * w)
         }
         return residual / Double(moved.count) > Double(tolerance) * 1.5
+    }
+
+    /// The pixels in `indices` and the ones next to them.
+    func around(_ indices: [Int], width: Int, count: Int) -> [Int] {
+        var inside = [Bool](repeating: false, count: count)
+        for i in indices {
+            let x = i % width
+            for d in [0, -1, 1, -width, width] {
+                let j = i + d
+                if j >= 0, j < count, !(d == -1 && x == 0), !(d == 1 && x == width - 1) { inside[j] = true }
+            }
+        }
+        return inside.indices.filter { inside[$0] }
+    }
+
+    /// How much edge a picture has over `region`: the grey steps to the right and down.
+    func ink(_ p: [UInt8], _ region: [Int], width: Int) -> Int {
+        var e = 0
+        for i in region {
+            if (i + 1) % width != 0, i + 1 < p.count { e += abs(Int(p[i + 1]) - Int(p[i])) }
+            if i + width < p.count { e += abs(Int(p[i + width]) - Int(p[i])) }
+        }
+        return e
     }
 
     /// Pixels that change while the script is quiet (a spinner, a working session's activity), with a pixel round them.
