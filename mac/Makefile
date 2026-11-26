@@ -10,7 +10,7 @@ MOTION_OUT ?= build/motion
 UI_SCRIPT ?= scripts/ui-sample.json
 UI_OUT ?= build/ui
 
-.PHONY: build test app icon install run demo shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline clean
+.PHONY: build test app icon install run demo shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
 
 build:
 	swift build
@@ -96,6 +96,11 @@ ui-check: app
 ui-baseline: app
 	swift build -c release --product prism-motion
 	scripts/ui-check.sh baseline "$(abspath $(FIXTURE))" "$(abspath $(UI_SCRIPT))" "$(abspath $(UI_OUT))"
+
+# Writes the stress fixtures into build/stress (big, worst, empty; made-up names only). Run one with
+# FIXTURE=build/stress/big/fixture.json make demo, or measure it in the background as docs/motion.md describes.
+stress:
+	python3 scripts/stress-fixture.py build/stress
 
 clean:
 	rm -rf .build build
