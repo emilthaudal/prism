@@ -244,7 +244,10 @@ func deskStartCmd(goal, dir, model, named, mode string, loop *loopState, out io.
 		return err
 	}
 	prompt := trackPrompt(name)
-	if loop != nil {
+	if loop == nil {
+		dropLoopFiles(name)
+	} else {
+		os.Remove(loopStopPath(name))
 		loop.Track = name
 		if err := writeLoop(*loop); err != nil {
 			return takeBackStart(name, fmt.Errorf("could not write the loop's state: %w", err))
@@ -266,6 +269,9 @@ func deskStartCmd(goal, dir, model, named, mode string, loop *loopState, out io.
 	id, err := startBackground(bgStart{track: name, dir: dir, model: model, parent: parent, prompt: prompt})
 	if err != nil && id == "" {
 		return takeBackStart(name, err)
+	}
+	if loop != nil {
+		setLoopSession(name, id)
 	}
 	logErr := logDeskStart(name, goal, dir, id)
 	if logErr == nil {
@@ -342,6 +348,7 @@ func drainQueue() []string {
 			continue
 		}
 		active++
+		setLoopSession(q.Track, id)
 		if lerr := logDeskStart(q.Track, q.Goal, q.Dir, id); err == nil {
 			err = lerr
 		}
@@ -501,7 +508,7 @@ func deskEvents(seen map[string]deskSeen, first bool) ([]deskEvent, error) {
 	if err := withBareStore(func(st *store.Store) error { return st.DeliverReports(ids) }); err != nil {
 		return nil, err
 	}
-	lines = loopEvents(lines, list)
+	lines = loopEvents(lines, list, first, noted)
 	for _, l := range questionLines(questions, seen) {
 		lines = append(lines, deskEvent{line: l})
 	}

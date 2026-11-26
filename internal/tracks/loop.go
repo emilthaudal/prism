@@ -1,17 +1,20 @@
 package tracks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/emilthaudal/prism/internal/deskui"
@@ -44,6 +47,9 @@ const (
 	loopRunning = "running"
 	loopPaused  = "paused"
 	loopEnded   = "ended"
+
+	// loopReasonMax is how many characters of the session's own words a loop's end reason quotes.
+	loopReasonMax = 200
 )
 
 // loopPermissionWait is how long a loop session's permission prompt waits before it is denied.
@@ -52,12 +58,14 @@ var loopPermissionWait = 2 * time.Minute
 // loopNow is the loop's clock; tests set it.
 var loopNow = time.Now
 
-// loopMarker is the last line a loop turn ends with.
-var loopMarker = regexp.MustCompile(`(?m)LOOP:\s*(done|continue)\b[ \t]*[-–—:]?[ \t]*(.*)$`)
+// loopMarker is the marker line a loop turn ends with, as the last non-empty line of its answer.
+var loopMarker = regexp.MustCompile("^[\\s>*`_]*LOOP:\\s*(done|continue)\\b[ \\t]*[-–—:]?[ \t]*(.*)$")
 
 // loopState is one loop: its limits, how far it got and whether it still runs.
 type loopState struct {
-	Track       string     `json:"track"`
+	Track string `json:"track"`
+	// Session is the desk session the loop runs in, once it started; "" until then.
+	Session     string     `json:"session,omitempty"`
 	StartedAt   time.Time  `json:"started_at"`
 	Until       time.Time  `json:"until"`
 	Turns       int        `json:"turns"`
@@ -74,6 +82,25 @@ type loopState struct {
 func loopsDir() string                 { return filepath.Join(home(), "loops") }
 func loopPath(track string) string     { return filepath.Join(loopsDir(), track+".json") }
 func loopStopPath(track string) string { return filepath.Join(loopsDir(), track+".stop") }
+
+// owns is whether the loop is the one running in session id: a loop that has not learned its
+// session yet belongs to whichever session its track has.
+func (l loopState) owns(id string) bool { return l.Session == "" || l.Session == id }
+
+// setLoopSession records the session a loop's track started, once it is known.
+func setLoopSession(track, id string) {
+	if l, ok := readLoop(track); ok && l.State != loopEnded && id != "" {
+		l.Session = id
+		_ = writeLoop(l)
+	}
+}
+
+// dropLoopFiles removes a track's loop state and stop request: a close or a start that is no loop
+// leaves nothing for a later session on the same name to inherit.
+func dropLoopFiles(track string) {
+	os.Remove(loopPath(track))
+	os.Remove(loopStopPath(track))
+}
 
 func readLoop(track string) (loopState, bool) {
 	var l loopState
@@ -212,12 +239,12 @@ func loopNext(l loopState, in loopInput) loopStep {
 	}
 	if verdict, why := loopVerdict(in.last); verdict == "done" {
 		if why == "" {
-			why = "nothing worth doing is left"
+			return end("the session said it is done")
 		}
-		return end("LOOP: done - " + why)
+		return end(`the session said "` + cutRunes(why, loopReasonMax) + `"`)
 	}
 	if in.errored && l.Errors >= loopMaxErrors {
-		return end(fmt.Sprintf("%d turns in a row ended in an error", loopMaxErrors))
+		return end(fmt.Sprintf("%d turns in a row ended in an error", l.Errors+1))
 	}
 	if !in.errored && l.Turn >= l.Turns {
 		return end(fmt.Sprintf("all %d turns run", l.Turns))
@@ -234,14 +261,24 @@ func loopNext(l loopState, in loopInput) loopStep {
 	return loopStep{kind: loopRunning}
 }
 
-// loopVerdict is the last LOOP: line of an answer: done or continue, and the words after it.
+// loopVerdict is the LOOP: marker on the last non-empty line of an answer: done or continue, and
+// the words after it.
 func loopVerdict(text string) (verdict, why string) {
-	m := loopMarker.FindAllStringSubmatch(text, -1)
-	if len(m) == 0 {
+	lines := strings.Split(strings.TrimSpace(text), "\n")
+	m := loopMarker.FindStringSubmatch(strings.TrimSpace(lines[len(lines)-1]))
+	if m == nil {
 		return "", ""
 	}
-	last := m[len(m)-1]
-	return last[1], strings.TrimSpace(strings.Trim(strings.TrimSpace(last[2]), "`"))
+	return m[1], strings.TrimSpace(strings.Trim(strings.TrimSpace(m[2]), "`"))
+}
+
+// cutRunes is s cut to n characters, with an ellipsis when it was longer.
+func cutRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 // loopOverBudget is whether usage is at or over the loop's budget of the five-hour window, or the
@@ -294,17 +331,32 @@ func loopSessionOf(list []store.Session, track string) (store.Session, bool) {
 	return found, ok
 }
 
+// loopSessionFor is the session a loop runs in: the one it recorded, else its track's newest.
+func loopSessionFor(list []store.Session, l loopState) (store.Session, bool) {
+	if l.Session == "" {
+		return loopSessionOf(list, l.Track)
+	}
+	i := slices.IndexFunc(list, func(s store.Session) bool { return s.ID == l.Session })
+	if i < 0 {
+		return store.Session{}, false
+	}
+	return list[i], true
+}
+
 // loopEvents runs the loops at their sessions' stops: a done or error event of a running loop is
 // withheld while the watch continues the loop itself, and passed on with a one-line summary once
 // the loop ends. A usage-limit block of a loop session is withheld too: the reaper turns it into
 // an error once the limit resets, and the loop goes on from there. tick then resumes paused loops
 // whose pause ran out, and ends the loops whose session Emil took over.
-func loopEvents(evs []deskEvent, list []store.Session) []deskEvent {
+func loopEvents(evs []deskEvent, list []store.Session, first bool, noted map[string]bool) []deskEvent {
 	loops := activeLoops()
 	if len(loops) == 0 {
 		return evs
 	}
 	now := loopNow()
+	if first {
+		evs = append(slices.Clone(evs), stalledLoopEvents(evs, loops, list, noted)...)
+	}
 	var usage *deskui.Usage
 	usageRead := false
 	getUsage := func() *deskui.Usage {
@@ -322,7 +374,7 @@ func loopEvents(evs []deskEvent, list []store.Session) []deskEvent {
 		}
 		s := list[i]
 		l, ok := loops[s.Track]
-		if !ok || s.Owner != "desk" {
+		if !ok || s.Owner != "desk" || !l.owns(s.ID) {
 			out = append(out, e)
 			continue
 		}
@@ -376,11 +428,55 @@ func applyLoopStep(l *loopState, step loopStep, s store.Session, advance bool, n
 	if err := writeLoop(*l); err != nil {
 		return false, false
 	}
-	if err := continueLoop(s, loopNote(*l, l.Errors > 0)); errors.Is(err, store.ErrEmils) {
+	switch err := loopContinue(s, loopNote(*l, l.Errors > 0)); {
+	case errors.Is(err, store.ErrEmils):
 		endLoop(l, "Emil took the session over", now)
+		return true, true
+	case err != nil:
+		endLoop(l, "could not deliver the next note: "+oneLine(err.Error()), now)
 		return true, true
 	}
 	return false, true
+}
+
+// loopContinue is how a loop delivers its next note; tests replace it.
+var loopContinue = continueLoop
+
+// stalledLoopEvents are the stops of loops the file says run while their session stopped before
+// this watch looked, as after a restart of the server: with no held note to wake it, nothing else
+// would ever decide their next turn.
+func stalledLoopEvents(evs []deskEvent, loops map[string]loopState, list []store.Session, noted map[string]bool) []deskEvent {
+	var out []deskEvent
+	for _, track := range slices.Sorted(maps.Keys(loops)) {
+		l := loops[track]
+		s, ok := loopSessionFor(list, l)
+		if !ok || l.State != loopRunning || s.Owner != "desk" || noted[s.ID] || compactMarked(s.ID) {
+			continue
+		}
+		stopped := s.Status == "done" || s.Status == "error" || s.Status == "idle" && s.LastAnswer != ""
+		if !stopped || slices.ContainsFunc(evs, func(e deskEvent) bool { return e.session == s.ID }) || hasHeldNote(s.ID) {
+			continue
+		}
+		outcome := s.Status
+		if outcome == "idle" {
+			outcome = "done"
+		}
+		note := oneLine(s.LastAnswer)
+		if note == "" {
+			note = "no message"
+		}
+		out = append(out, deskEvent{line: fmt.Sprintf("%s %s: %s", sessionLabel(s.Track, s.Name, s.ID), outcome, note), session: s.ID, outcome: outcome, text: s.LastAnswer, track: s.Track})
+	}
+	return out
+}
+
+// hasHeldNote is whether a note waits for the session's next stop.
+func hasHeldNote(id string) bool {
+	var held []store.HeldNote
+	if withBareStore(func(st *store.Store) (err error) { held, err = st.DeliverableNotes(); return err }) != nil {
+		return true
+	}
+	return slices.ContainsFunc(held, func(n store.HeldNote) bool { return n.Session.ID == id })
 }
 
 // continueLoop gives the loop session its next turn's note: at once when it is stopped, held for
@@ -446,7 +542,7 @@ func loopTick(loops map[string]loopState, list []store.Session, now time.Time, u
 		if l.State == loopEnded {
 			continue
 		}
-		s, ok := loopSessionOf(list, track)
+		s, ok := loopSessionFor(list, l)
 		if !ok {
 			continue
 		}
@@ -482,7 +578,7 @@ func isLoopSession(id string) bool {
 		return false
 	}
 	l, ok := readLoop(list[i].Track)
-	return ok && l.State != loopEnded
+	return ok && l.State != loopEnded && l.owns(id)
 }
 
 // loopDenyNote closes a loop session's prompt that nobody answered in loopPermissionWait.
@@ -552,23 +648,87 @@ func loopStateText(l loopState, now time.Time) string {
 	return l.State
 }
 
+// errNoLoop is a stop request for a track whose loop does not exist or has ended.
+var errNoLoop = errors.New("no live loop")
+
 func stopLoop(track string, out io.Writer) error {
+	msg, err := requestLoopStop(track)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(out, msg)
+	return nil
+}
+
+// requestLoopStop asks track's loop to end and says when it will; errNoLoop wraps the refusal
+// for a track with no live loop.
+func requestLoopStop(track string) (string, error) {
 	l, ok := readLoop(track)
 	switch {
 	case !ok:
-		return fmt.Errorf("no loop on %s", track)
+		return "", fmt.Errorf("%w: no loop on %s", errNoLoop, track)
 	case l.State == loopEnded:
-		return fmt.Errorf("%s's loop has ended: %s", track, l.Ended)
+		return "", fmt.Errorf("%w: %s's loop has ended: %s", errNoLoop, track, l.Ended)
 	}
 	if err := os.WriteFile(loopStopPath(track), nil, 0o644); err != nil {
-		return err
+		return "", err
 	}
 	if l.State == loopPaused {
-		fmt.Fprintf(out, "%s's loop ends at the watch's next look; its session is not stopped\n", track)
-		return nil
+		return track + "'s loop ends at the watch's next look; its session is not stopped", nil
 	}
-	fmt.Fprintf(out, "%s's loop ends after its current turn; its session is not stopped\n", track)
-	return nil
+	return track + "'s loop ends after its current turn; its session is not stopped", nil
+}
+
+// caffeinateStart keeps the Mac awake until the returned stop is called; tests replace it.
+var caffeinateStart = func() (stop func(), err error) {
+	path, err := exec.LookPath("caffeinate")
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, path, "-i", "-w", strconv.Itoa(os.Getpid()))
+	if err := cmd.Start(); err != nil {
+		cancel()
+		return nil, err
+	}
+	return func() { cancel(); _ = cmd.Wait() }, nil
+}
+
+// loopAwake holds one caffeinate child while a loop runs or is paused.
+var loopAwake struct {
+	mu   sync.Mutex
+	stop func()
+}
+
+// keepLoopsAwake starts the one caffeinate when the first loop goes live and stops it when the
+// last ends. Where caffeinate is missing it does nothing.
+func keepLoopsAwake() {
+	live := false
+	now := loopNow()
+	for _, l := range activeLoops() {
+		live = live || l.Until.After(now)
+	}
+	loopAwake.mu.Lock()
+	defer loopAwake.mu.Unlock()
+	switch {
+	case live && loopAwake.stop == nil:
+		if stop, err := caffeinateStart(); err == nil {
+			loopAwake.stop = stop
+		}
+	case !live && loopAwake.stop != nil:
+		loopAwake.stop()
+		loopAwake.stop = nil
+	}
+}
+
+// releaseLoopsAwake stops the caffeinate child, as serve exits.
+func releaseLoopsAwake() {
+	loopAwake.mu.Lock()
+	defer loopAwake.mu.Unlock()
+	if loopAwake.stop != nil {
+		loopAwake.stop()
+		loopAwake.stop = nil
+	}
 }
 
 // loopsStamp changes when a loop's state does, so serve sends the sessions again.

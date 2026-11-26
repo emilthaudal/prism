@@ -642,8 +642,10 @@ func (r *deskRunner) guardReply() {
 func (r *deskRunner) watch(ctx context.Context) {
 	t := time.NewTicker(deskWatch)
 	defer t.Stop()
+	defer releaseLoopsAwake()
 	for {
 		lines, reports := r.watchOnce()
+		keepLoopsAwake()
 		if len(lines) > 0 || len(reports) > 0 {
 			if len(reports) > 0 {
 				err := withBareStore(func(st *store.Store) error {

@@ -3,6 +3,8 @@ package tracks
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +33,7 @@ func TestLoopNextContinuesPausesOrEnds(t *testing.T) {
 		{"continue", base, loopInput{last: "Cut 4%.\nLOOP: continue - cache the parse", now: now}, loopStep{kind: loopRunning}},
 		{"no marker continues on the cap", base, loopInput{last: "Did a thing.", now: now}, loopStep{kind: loopRunning}},
 		{"the session says done", base, loopInput{last: "LOOP: continue - x\n…\nLOOP: done - nothing left above noise", now: now},
-			loopStep{kind: loopEnded, why: "LOOP: done - nothing left above noise"}},
+			loopStep{kind: loopEnded, why: `the session said "nothing left above noise"`}},
 		{"stop asked", base, loopInput{last: "LOOP: continue - x", stop: true, now: now}, loopStep{kind: loopEnded, why: "stopped with tracks loop stop"}},
 		{"turns used up", with(func(l *loopState) { l.Turn = 20 }), loopInput{last: "LOOP: continue - x", now: now}, loopStep{kind: loopEnded, why: "all 20 turns run"}},
 		{"deadline passed", base, loopInput{last: "LOOP: continue - x", now: late}, loopStep{kind: loopEnded, why: "the deadline " + base.Until.Format("15:04") + " passed"}},
@@ -45,7 +47,7 @@ func TestLoopNextContinuesPausesOrEnds(t *testing.T) {
 		{"under budget", base, loopInput{now: now, usage: usage(69, 94, &reset, now)}, loopStep{kind: loopRunning}},
 		{"an error is tried again past the turn cap", with(func(l *loopState) { l.Turn, l.Errors = 20, 2 }), loopInput{errored: true, now: now}, loopStep{kind: loopRunning}},
 		{"the fourth error in a row ends it", with(func(l *loopState) { l.Errors = 3 }), loopInput{errored: true, now: now},
-			loopStep{kind: loopEnded, why: "3 turns in a row ended in an error"}},
+			loopStep{kind: loopEnded, why: "4 turns in a row ended in an error"}},
 	} {
 		if got := loopNext(c.l, c.in); got != c.want {
 			t.Errorf("%s: %+v, want %+v", c.name, got, c.want)
@@ -115,7 +117,7 @@ func TestALoopContinuesWithoutTheDeskAndReportsOnceWhenItEnds(t *testing.T) {
 		t.Errorf("loop after a turn: %+v", l)
 	}
 	lines := loopTurn(t, id, "Tokens cached: 2% more.\nLOOP: done - what is left is noise")
-	want := "tuner done: [loop ended after 2 of 5 turns: LOOP: done - what is left is noise] Tokens cached: 2% more. LOOP: done - what is left is noise"
+	want := "tuner done: [loop ended after 2 of 5 turns: the session said \"what is left is noise\"] Tokens cached: 2% more. LOOP: done - what is left is noise"
 	if len(lines) != 1 || lines[0] != want {
 		t.Errorf("end lines:\n%q\nwant\n%q", lines, want)
 	}
@@ -128,7 +130,7 @@ func TestALoopContinuesWithoutTheDeskAndReportsOnceWhenItEnds(t *testing.T) {
 			loopLines = append(loopLines, h.Did)
 		}
 	}
-	if len(loopLines) != 2 || !strings.HasPrefix(loopLines[0], "loop started: 5 turns until ") || loopLines[1] != "loop ended after 2 of 5 turns: LOOP: done - what is left is noise" {
+	if len(loopLines) != 2 || !strings.HasPrefix(loopLines[0], "loop started: 5 turns until ") || loopLines[1] != "loop ended after 2 of 5 turns: the session said \"what is left is noise\"" {
 		t.Errorf("handled log loop entries: %q", loopLines)
 	}
 	if lines := loopTurn(t, id, "Something else."); len(lines) != 1 || !strings.HasPrefix(lines[0], "tuner done: Something else.") {
@@ -197,7 +199,7 @@ func TestALoopRetriesAnErrorThreeTimesThenEnds(t *testing.T) {
 		if i < 3 && len(lines) != 0 {
 			t.Fatalf("error %d reported: %q", i+1, lines)
 		}
-		if i == 3 && (len(lines) != 1 || !strings.Contains(lines[0], "[loop ended after 1 of 20 turns: 3 turns in a row ended in an error]")) {
+		if i == 3 && (len(lines) != 1 || !strings.Contains(lines[0], "[loop ended after 1 of 20 turns: 4 turns in a row ended in an error]")) {
 			t.Fatalf("fourth error: %q", lines)
 		}
 		if i < 3 {
@@ -320,4 +322,183 @@ func TestTheSnapshotShowsALoopSessionsLoop(t *testing.T) {
 		return
 	}
 	t.Errorf("no session %s in %s", id, b)
+}
+
+func TestALoopsMarkerCountsOnlyOnTheLastNonEmptyLine(t *testing.T) {
+	for _, c := range []struct{ text, verdict, why string }{
+		{"LOOP: done - early\nbut more work followed", "", ""},
+		{"I will say LOOP: done - later", "", ""},
+		{"work\n\n  LOOP: continue - next  \n\n", "continue", "next"},
+		{"work\n`LOOP: done - nothing left`", "done", "nothing left"},
+		{"LOOP: continue - x\nLOOP: done - y", "done", "y"},
+	} {
+		if v, why := loopVerdict(c.text); v != c.verdict || why != c.why {
+			t.Errorf("%q: %q %q, want %q %q", c.text, v, why, c.verdict, c.why)
+		}
+	}
+}
+
+func TestALoopQuotesTheSessionsReasonCutToTwoHundredCharacters(t *testing.T) {
+	base := loopState{Track: "tuner", Until: time.Now().Add(time.Hour), Turns: 5, Turn: 1}
+	long := strings.Repeat("é", 250)
+	step := loopNext(base, loopInput{last: "LOOP: done - " + long, now: time.Now()})
+	want := `the session said "` + strings.Repeat("é", 200) + `…"`
+	if step.kind != loopEnded || step.why != want {
+		t.Errorf("%q", step.why)
+	}
+	if step := loopNext(base, loopInput{last: "LOOP: done", now: time.Now()}); step.why != "the session said it is done" {
+		t.Errorf("%q", step.why)
+	}
+}
+
+func TestTheRouteStopsALoopAndAnswers404WithoutOne(t *testing.T) {
+	_, c := liveHome(t)
+	tr := c.snapshot().Tracks[2]
+	path := "/v1/tracks/" + tr.ID + "/loop/stop"
+	if code, _ := c.post(path, ""); code != http.StatusNotFound {
+		t.Errorf("no loop: %d", code)
+	}
+	l := loopState{Track: tr.Name, StartedAt: time.Now(), Until: time.Now().Add(time.Hour), Turns: 5, Turn: 2, Budget: 70, State: loopRunning}
+	if err := writeLoop(l); err != nil {
+		t.Fatal(err)
+	}
+	code, v := c.post(path, "")
+	if code != 200 || v["status"] != tr.Name+"'s loop ends after its current turn; its session is not stopped" {
+		t.Errorf("stop: %d %v", code, v)
+	}
+	if !stopRequested(tr.Name) {
+		t.Error("no stop request was written")
+	}
+	l.State, l.Ended = loopEnded, "done"
+	if err := writeLoop(l); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := c.post(path, ""); code != http.StatusNotFound {
+		t.Errorf("ended loop: %d", code)
+	}
+}
+
+func TestTheMacStaysAwakeWhileALoopIsLive(t *testing.T) {
+	startHome(t)
+	started, stopped := 0, 0
+	old := caffeinateStart
+	caffeinateStart = func() (func(), error) { started++; return func() { stopped++ }, nil }
+	t.Cleanup(func() { releaseLoopsAwake(); caffeinateStart = old })
+	live := func(track string) loopState {
+		return loopState{Track: track, StartedAt: time.Now(), Until: time.Now().Add(time.Hour), Turns: 5, Turn: 1, State: loopRunning}
+	}
+	keepLoopsAwake()
+	if started != 0 {
+		t.Fatalf("started with no loop: %d", started)
+	}
+	a, b := live("one"), live("two")
+	for _, l := range []loopState{a, b} {
+		if err := writeLoop(l); err != nil {
+			t.Fatal(err)
+		}
+	}
+	keepLoopsAwake()
+	keepLoopsAwake()
+	if started != 1 || stopped != 0 {
+		t.Fatalf("two loops: started %d stopped %d", started, stopped)
+	}
+	a.State = loopEnded
+	_ = writeLoop(a)
+	keepLoopsAwake()
+	if started != 1 || stopped != 0 {
+		t.Fatalf("one loop left: started %d stopped %d", started, stopped)
+	}
+	b.State = loopPaused
+	_ = writeLoop(b)
+	keepLoopsAwake()
+	if stopped != 0 {
+		t.Fatalf("a paused loop is live: stopped %d", stopped)
+	}
+	b.State = loopEnded
+	_ = writeLoop(b)
+	keepLoopsAwake()
+	if started != 1 || stopped != 1 {
+		t.Fatalf("no loop left: started %d stopped %d", started, stopped)
+	}
+}
+
+func TestALoopFileOnlyAppliesToTheSessionItStarted(t *testing.T) {
+	id, bin := loopStarted(t, "--turns", "5")
+	if l := mustLoop(t, "tuner"); l.Session != id {
+		t.Fatalf("the loop recorded session %q, want %q", l.Session, id)
+	}
+	other := fullID("bbbbbbb2")
+	err := withBareStore(func(st *store.Store) error {
+		return st.StartDeskSession(store.DeskStart{ID: other, Parent: deskClaude, Track: "tuner", Name: "tuner", Prompt: "/track tuner"})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isLoopSession(id) || isLoopSession(other) {
+		t.Errorf("isLoopSession: first %v, second %v", isLoopSession(id), isLoopSession(other))
+	}
+	lines := loopTurn(t, other, "Did something.\nLOOP: continue - more")
+	if len(lines) != 1 || !strings.HasPrefix(lines[0], "tuner done: Did something.") {
+		t.Errorf("the second session's stop: %q", lines)
+	}
+	if exists(filepath.Join(bin, "claude.notes")) {
+		t.Error("another session's loop file continued the second session")
+	}
+	if l := mustLoop(t, "tuner"); l.Turn != 1 || l.State != loopRunning {
+		t.Errorf("loop moved: %+v", l)
+	}
+}
+
+func TestClosingTheTrackOrAPlainStartRemovesAStaleLoopFile(t *testing.T) {
+	loopStarted(t)
+	if out, code := do("close", "--yes", "tuner"); code != 0 {
+		t.Fatalf("close: %d %q", code, out)
+	}
+	if _, ok := readLoop("tuner"); ok {
+		t.Error("closing the track left its loop file")
+	}
+}
+
+func TestAPlainStartRemovesAStaleLoopFile(t *testing.T) {
+	th, bin := startHome(t)
+	asDeskInClaude(t, bin)
+	stale := loopState{Track: "ghost", StartedAt: time.Now(), Until: time.Now().Add(time.Hour), Turns: 5, Turn: 1, State: loopRunning}
+	if err := writeLoop(stale); err != nil {
+		t.Fatal(err)
+	}
+	if out, code := do("start", "something else", "--dir", th, "--name", "ghost"); code != 0 {
+		t.Fatalf("start: %d %q", code, out)
+	}
+	if _, ok := readLoop("ghost"); ok {
+		t.Error("a plain start left the stale loop file")
+	}
+}
+
+func TestAFailingNoteEndsTheLoopAndForwardsTheDone(t *testing.T) {
+	id, _ := loopStarted(t)
+	old := loopContinue
+	loopContinue = func(store.Session, string) error { return errors.New("db is locked") }
+	t.Cleanup(func() { loopContinue = old })
+	lines := loopTurn(t, id, "Did a thing.\nLOOP: continue - more")
+	if len(lines) != 1 || !strings.Contains(lines[0], "[loop ended after 2 of 20 turns: could not deliver the next note: db is locked]") {
+		t.Errorf("lines %q", lines)
+	}
+	if l := mustLoop(t, "tuner"); l.State != loopEnded || l.Ended != "could not deliver the next note: db is locked" {
+		t.Errorf("loop: %+v", l)
+	}
+}
+
+func TestARestartPicksUpALoopWhoseTurnEndedWhileTheWatchWasDown(t *testing.T) {
+	id, bin := loopStarted(t)
+	bgHook(t, map[string]any{"hook_event_name": "Stop", "session_id": id, "last_assistant_message": "Cut 3%.\nLOOP: continue - more"})
+	lines, err := pollDesk(map[string]deskSeen{}, true)
+	if err != nil || len(lines) != 0 {
+		t.Fatalf("first poll: %q %v", lines, err)
+	}
+	if l := mustLoop(t, "tuner"); l.Turn != 2 || l.State != loopRunning {
+		t.Errorf("loop: %+v", l)
+	}
+	if n := lastNote(t, id, bin); !strings.HasPrefix(n, "Continue the loop: iteration 2 of 20") {
+		t.Errorf("note %q", n)
+	}
 }
