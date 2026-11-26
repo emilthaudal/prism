@@ -9,7 +9,7 @@ struct DeskWindow: View {
 
     var body: some View {
         @Bindable var model = model
-        let board = Board(store.snapshot)
+        let board = store.board
         NavigationSplitView {
             SidebarView(store: store, model: model)
                 .navigationSplitViewColumnWidth(min: Theme.sidebarMinWidth, ideal: Theme.sidebarIdealWidth(names: store.snapshot.tracks.map(\.name)), max: Theme.sidebarMaxWidth)

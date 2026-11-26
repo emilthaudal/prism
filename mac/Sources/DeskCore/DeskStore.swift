@@ -36,7 +36,9 @@ public struct Notice: Equatable, Sendable {
 @MainActor
 @Observable
 public final class DeskStore {
-    public private(set) var snapshot = Snapshot.empty
+    public private(set) var snapshot = Snapshot.empty {
+        didSet { boardCache = nil }
+    }
     public private(set) var loaded = false
     public private(set) var connection = Connection.connecting
     public private(set) var answers = AnswerQueue()
@@ -62,6 +64,17 @@ public final class DeskStore {
     @ObservationIgnored public let clock: @Sendable () -> Date
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
     @ObservationIgnored private var known: Set<String> = []
+    @ObservationIgnored private var boardCache: Board?
+
+    /// The snapshot's board, worked out once per change of the snapshot. Each question card asked for its dialog and
+    /// staged answers, and each ask built a Board of its own: 30 open questions sorted some 30 times per redraw.
+    public var board: Board {
+        let s = snapshot
+        if let cached = boardCache { return cached }
+        let fresh = Board(s)
+        boardCache = fresh
+        return fresh
+    }
 
     static let retryDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4), .seconds(8), .seconds(15)]
 
@@ -178,7 +191,7 @@ public final class DeskStore {
     /// dialog. A permission prompt and the desk's own questions are shown alone.
     public func dialog(of q: Question) -> [Question] {
         guard !isPermission(q), q.track != nil || q.session != nil else { return [q] }
-        return Board(snapshot).needsYou.filter { $0.dialog == q.dialog && !isPermission($0) }
+        return board.needsYou.filter { $0.dialog == q.dialog && !isPermission($0) }
     }
 
     /// The question of `q`'s dialog that the keys answer: `q` while it is undecided, else the first undecided one.
@@ -198,7 +211,7 @@ public final class DeskStore {
 
     /// The staged answers of `dialog`, in the board's order.
     public func stagedItems(for dialog: String) -> [BatchItem] {
-        Board(snapshot).needsYou.compactMap { q in q.dialog == dialog ? staged[q.id].map { c in BatchItem(question: q.id, choice: c, againstRecommendation: q.recommendedChoice.map { $0 != c } ?? false) } : nil }
+        board.needsYou.compactMap { q in q.dialog == dialog ? staged[q.id].map { c in BatchItem(question: q.id, choice: c, againstRecommendation: q.recommendedChoice.map { $0 != c } ?? false) } : nil }
     }
 
     public func stagedCount(for dialog: String) -> Int { stagedItems(for: dialog).count }
@@ -206,7 +219,7 @@ public final class DeskStore {
     /// The dialog ⌘↩ sends for: `preferring`'s, else the first with a staged answer.
     public func stagedDialog(preferring questionID: String?) -> String? {
         if let id = questionID, let q = snapshot.question(id), stagedCount(for: q.dialog) > 0 { return q.dialog }
-        return Board(snapshot).needsYou.first { staged[$0.id] != nil }?.dialog
+        return board.needsYou.first { staged[$0.id] != nil }?.dialog
     }
 
     /// Starts the 5-second countdown; `tick` sends it when it runs out. A dialog with other open questions has the answer

@@ -8,7 +8,7 @@ struct ChatView: View {
 
     var body: some View {
         let s = store.snapshot
-        let board = Board(s)
+        let board = store.board
         ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible) {
             LazyVStack(alignment: .leading, spacing: Space.none) {
                 let kinds = s.conversation.map { Self.kind(of: $0) }
