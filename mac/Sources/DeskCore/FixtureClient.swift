@@ -118,6 +118,12 @@ public actor FixtureClient: DeskClient {
             try changeSession(id) { $0.seenAt = now }
         case .stop(let id):
             try changeSession(id) { $0.status = SessionStatus.stopped.rawValue; $0.host = "stopped"; $0.activity = nil }
+        case .stopLoop(let id):
+            guard state.track(id) != nil else { throw ClientError.http(status: 404, message: "no track \(id)") }
+            let looping = state.sessions.filter { $0.track == id && $0.loop?.isLive == true }
+            guard !looping.isEmpty else { throw ClientError.http(status: 409, message: "no loop on track \(id)") }
+            for s in looping { try changeSession(s.id) { $0.loop?.state = "ended" } }
+            return ActionReply(status: "loop ends after its current turn")
         case .mode(let id, let mode, let swap):
             guard var t = state.track(id) else { throw ClientError.http(status: 404, message: "no track \(id)") }
             if mode == "focus", t.mode != "focus" {

@@ -25,6 +25,13 @@ struct BoardView: View {
         BoardPlan.handledToday(entries, now: now).count
     }
 
+    /// A live loop's label first, then what the session does now, then how long ago.
+    static func inFlightDetail(_ session: Session, now: Date) -> String {
+        let doing = session.liveActivity.map(Activity.readable) ?? session.state.rawValue
+        let lead = session.loopLead(doing) ?? doing
+        return [lead, Theme.ago(session.updatedAt, now: now)].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
     /// The track's name, or "Prism" for what the desk noted for itself.
     static func handledName(_ entry: Handled, in s: Snapshot) -> String {
         if entry.track == "desk" { return "Prism" }
@@ -37,6 +44,7 @@ struct BoardView: View {
         let active = model.activeQuestion(in: s)?.id
         let placements = board.placements
         let motion = motion(from: before, to: placements)
+        let loops = LoopBrief.all(s)
         ScrollView {
             VStack(alignment: .leading, spacing: Space.m) {
                 // Just the name: the window's one status line says the rest.
@@ -49,7 +57,7 @@ struct BoardView: View {
                         Spacer(minLength: 0)
                     }
                     .boardText()
-                    QuietBoard(plan: BoardPlan(s, now: now), model: model, now: now)
+                    QuietBoard(plan: BoardPlan(s, now: now), store: store, model: model, loops: loops, now: now)
                         .arrives("quiet")
                 }
                 if !board.needsYou.isEmpty {
@@ -76,10 +84,13 @@ struct BoardView: View {
                             .arrives(session.id)
                     }
                 }
+                if !board.needsYou.isEmpty {
+                    LoopsSection(store: store, model: model, loops: loops, now: now)
+                }
                 if !board.inFlight.isEmpty {
                     SectionHeading("In flight", count: board.inFlight.count)
                     ForEach(board.inFlight) { session in
-                        LaneRow(session: session, detail: [session.liveActivity.map(Activity.readable) ?? session.state.rawValue, Theme.ago(session.updatedAt, now: now)].filter { !$0.isEmpty }.joined(separator: " · ")) { model.selection = .session(session.id) }
+                        LaneRow(session: session, detail: Self.inFlightDetail(session, now: now)) { model.selection = .session(session.id) }
                         .arrives(session.id)
                     }
                 }

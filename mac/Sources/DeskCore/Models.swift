@@ -203,8 +203,10 @@ public struct Session: Codable, Equatable, Sendable, Identifiable {
     public var changes: Changes?
     public var seenAt: Date?
     public var updatedAt: Date?
+    /// Set while the session is an overnight loop; absent otherwise.
+    public var loop: Loop?
 
-    public init(id: String, short: String? = nil, track: String? = nil, parent: String? = nil, owner: String = "desk", host: String? = "background", name: String? = nil, status: String = "idle", waitingFor: String? = nil, activity: String? = nil, subagents: [Subagent]? = nil, lastAnswer: String? = nil, changes: Changes? = nil, seenAt: Date? = nil, updatedAt: Date? = nil) {
+    public init(id: String, short: String? = nil, track: String? = nil, parent: String? = nil, owner: String = "desk", host: String? = "background", name: String? = nil, status: String = "idle", waitingFor: String? = nil, activity: String? = nil, subagents: [Subagent]? = nil, lastAnswer: String? = nil, changes: Changes? = nil, seenAt: Date? = nil, updatedAt: Date? = nil, loop: Loop? = nil) {
         self.id = id
         self.short = short
         self.track = track
@@ -220,11 +222,17 @@ public struct Session: Codable, Equatable, Sendable, Identifiable {
         self.changes = changes
         self.seenAt = seenAt
         self.updatedAt = updatedAt
+        self.loop = loop
     }
 
     /// An unknown status reads as idle, so a newer server never breaks the list.
     public var state: SessionStatus { SessionStatus(rawValue: status) ?? .idle }
     public var isEmils: Bool { owner == "emil" }
+    /// The loop label, then the activity: how a live loop's detail line reads.
+    public func loopLead(_ activity: String?, timeZone: TimeZone = .current) -> String? {
+        guard let loop, loop.isLive else { return activity }
+        return [loop.label(timeZone: timeZone), activity].compactMap { $0 }.joined(separator: " · ")
+    }
     /// What the agent is doing now, while it works; nothing for a session that is not working.
     public var liveActivity: String? {
         guard state == .working, let a = activity?.trimmingCharacters(in: .whitespaces), !a.isEmpty else { return nil }

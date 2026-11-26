@@ -4,7 +4,9 @@ import SwiftUI
 /// The board's quiet state: the day in one line, then a brief per open track.
 struct QuietBoard: View {
     var plan: BoardPlan
+    var store: DeskStore
     var model: WindowModel
+    var loops: [LoopBrief]
     var now: Date
 
     var body: some View {
@@ -12,6 +14,7 @@ struct QuietBoard: View {
             if let line = plan.digestLine {
                 Text(line).font(.callout).foregroundStyle(.secondary).boardText()
             }
+            LoopsSection(store: store, model: model, loops: loops, now: now)
             if plan.tracksCount > 0 {
                 SectionHeading("Tracks", count: plan.tracksCount)
                 ForEach(plan.briefs) { brief in

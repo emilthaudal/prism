@@ -30,6 +30,8 @@ public enum DeskAction: Equatable, Sendable {
     case giveback(session: String)
     case seen(session: String)
     case stop(session: String)
+    /// Ends the track's overnight loop after its current turn.
+    case stopLoop(track: String)
     /// `swap` names the focus track that moves to background when focus is full.
     case mode(track: String, mode: String, swap: String? = nil)
     case open(track: String)
@@ -52,6 +54,7 @@ public enum DeskAction: Equatable, Sendable {
         case .giveback(let id): ("v1/sessions/\(Self.escape(id))/giveback", nil)
         case .seen(let id): ("v1/sessions/\(Self.escape(id))/seen", nil)
         case .stop(let id): ("v1/sessions/\(Self.escape(id))/stop", nil)
+        case .stopLoop(let id): ("v1/tracks/\(Self.escape(id))/loop/stop", nil)
         case .mode(let id, let mode, let swap):
             ("v1/tracks/\(Self.escape(id))/mode", swap.map { ["mode": mode, "swap": $0] } ?? ["mode": mode])
         case .open(let id): ("v1/tracks/\(Self.escape(id))/open", nil)

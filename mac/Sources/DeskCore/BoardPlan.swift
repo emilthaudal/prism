@@ -32,6 +32,26 @@ public struct TrackBrief: Equatable, Sendable, Identifiable {
     public var id: String { track.id }
 }
 
+/// One live overnight loop on the board.
+public struct LoopBrief: Equatable, Sendable, Identifiable {
+    public var session: Session
+    public var loop: Loop
+    public var track: Track?
+    public var id: String { session.id }
+    public var name: String { track?.name ?? session.displayName }
+    public var goal: String? { track?.goal.flatMap(BoardPlan.text) }
+    /// What the session does now, else what it last said.
+    public var now: String? { session.liveActivity.map(Activity.readable) ?? session.lastAnswerGist }
+
+    /// Every session whose loop is running or paused, in the snapshot's order.
+    public static func all(_ s: Snapshot) -> [LoopBrief] {
+        s.sessions.compactMap { session in
+            guard let loop = session.loop, loop.isLive else { return nil }
+            return LoopBrief(session: session, loop: loop, track: s.track(session.track))
+        }
+    }
+}
+
 /// A waiting track as one compact row.
 public struct WaitingBrief: Equatable, Sendable, Identifiable {
     public var track: Track
@@ -88,7 +108,7 @@ public struct BoardPlan: Equatable, Sendable {
         waiting = rows.filter { $0.mode == "waiting" }.flatMap(\.tracks).map { WaitingBrief(track: $0.track, detail: $0.line ?? $0.track.blocker) }
     }
 
-    private static func text(_ s: String?) -> String? {
+    static func text(_ s: String?) -> String? {
         guard let t = s?.trimmingCharacters(in: .whitespacesAndNewlines), !t.isEmpty else { return nil }
         return t
     }

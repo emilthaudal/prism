@@ -99,8 +99,8 @@ public struct SidebarSession: Equatable, Sendable, Identifiable {
 
     /// The dim second line, unless the activity already is the row's name.
     public func activityLine(under track: String?) -> String? {
-        guard let activity, title(under: track) != activity else { return nil }
-        return activity
+        let shown = activity.flatMap { title(under: track) == $0 ? nil : $0 }
+        return session.loopLead(shown)
     }
 }
 
@@ -225,6 +225,7 @@ public struct Sidebar: Equatable, Sendable {
     /// The track row's second line: what its session does now, what the track waits on, its check and last
     /// answer, else what it last said.
     static func line(_ t: Track, primary: Session?, chip: StatusChip) -> String? {
+        if let p = primary, p.loop?.isLive == true { return p.loopLead(p.liveActivity.map(Activity.readable)) }
         if let a = primary?.liveActivity { return Activity.readable(a) }
         // As written: notes start lowercase already, and a note can start with a name ("Alex").
         if case .waitingOn(let who, _) = chip { return t.check?.blocker == who ? who : "Waits on " + who }
