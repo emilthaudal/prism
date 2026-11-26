@@ -64,7 +64,6 @@ Status: the contract steps 5 (EMI-380, the server) and 6 (EMI-381, the native ap
 | `POST /v1/sessions/{id}/giveback` | none | Owner becomes desk; the desk is told once. |
 | `POST /v1/sessions/{id}/seen` | none | Sets `seen_at` (the client calls it when Emil opens the session). |
 | `POST /v1/sessions/{id}/stop` | none | `claude stop SHORT`. |
-| `POST /v1/tracks/{id}/loop/stop` | none | Ends the track's overnight loop after its current turn. A session with a loop carries `loop: {turn, turns, until, state: running\|paused\|ended, paused_until}`; the key is absent for a session that is no loop. Answers `{"status": "…"}`. |
 | `POST /v1/tracks/{id}/mode` | `{"mode": "focus", "swap": "NAME"}` | As `tracks mode`. A third focus track answers 409 `{"error": …, "focus": ["older", "newer"]}`; send it again with `swap` naming the focus track that moves to background. A track's `shown_mode` in the snapshot is the mode it is shown in: waiting is computed (a `check` or `waiting_on`, no open ask, no working session), and a stored `waiting` reads as background (EMI-423). |
 | `POST /v1/tracks/{id}/open` | none | As `tracks open`: focus its Rex session. |
 | `POST /v1/tracks/{id}/loop/stop` | none | As `tracks loop stop NAME` (EMI-466): the track's loop ends after its current turn, a paused one at the watch's next look; its session is not stopped. Answers `{"status": "NAME's loop ends after its current turn; its session is not stopped"}`; 404 when the track has no live loop (none, or one that ended). |
