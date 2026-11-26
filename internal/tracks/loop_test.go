@@ -174,7 +174,7 @@ func TestALoopOverBudgetPausesUntilTheReset(t *testing.T) {
 	if exists(filepath.Join(bin, "claude.notes")) {
 		t.Error("a paused loop got a note")
 	}
-	if out, _ := do("loop"); out != "tuner  turn 1/20  until "+loopClock(mustLoop(t, "tuner").Until, now)+"  paused until "+reset.Format("15:04")+"\n" {
+	if out, _ := do("loop"); out != "tuner  turn 1/20  until "+loopClock(mustLoop(t, "tuner").Until, now)+"  paused until "+loopClock(reset, now)+"\n" {
 		t.Errorf("tracks loop: %q", out)
 	}
 	old := loopNow
