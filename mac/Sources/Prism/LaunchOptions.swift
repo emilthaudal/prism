@@ -1,8 +1,8 @@
 import Foundation
 
-/// `Prism [--fixture PATH] [--appearance light|dark] [--background] [--select ID] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]`.
+/// `Prism [--fixture PATH] [--appearance light|dark] [--background] [--select ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]`.
 struct LaunchOptions {
-    static let usage = "usage: Prism [--fixture PATH] [--appearance light|dark] [--background] [--select QUESTION-OR-SESSION-ID] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]"
+    static let usage = "usage: Prism [--fixture PATH] [--appearance light|dark] [--background] [--select QUESTION-OR-SESSION-ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]"
 
     /// Runs on this snapshot in memory instead of prism server.
     var fixture: URL?
@@ -10,6 +10,8 @@ struct LaunchOptions {
     /// For captures: no Dock icon, never active or key, no notifications.
     var background = false
     var select: String?
+    /// Sets when the window was last looked at for this run, so the "While you were away" digest shows; never written to the user defaults.
+    var awaySince: Date?
     /// Fixture captures only: takes the recommendation once loaded, so the countdown shows without a key press.
     var demoAnswer = false
     /// Fixture captures only: stages the recommended answer to the asker's other open questions, so the batch shows.
@@ -48,6 +50,10 @@ struct LaunchOptions {
             case "--demo-script": demoScript = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--motion-dir": motionDir = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--ui-dir": uiDir = URL(fileURLWithPath: try Self.value(arg, &it))
+            case "--away-since":
+                let v = try Self.value(arg, &it)
+                guard let date = try? Date.ISO8601FormatStyle().parse(v) else { throw Invalid(description: "--away-since needs an ISO 8601 time: \(v)") }
+                awaySince = date
             case "--select": select = try Self.value(arg, &it)
             case "--snapshot": snapshot = URL(fileURLWithPath: try Self.value(arg, &it))
             // AppKit and Xcode pass these; they are not ours. AppKit reads -reduceMotion YES as Reduce Motion for this

@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tickTask: Task<Void, Never>?
     private var keyMonitor: Any?
     private var player: ScriptPlayer?
+    private var awayObserver: AwayObserver?
 
     /// How often due answers are sent; the countdown itself redraws on its own.
     private static let tickInterval: Duration = .milliseconds(200)
@@ -49,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         default: break
         }
         installMenu()
+        model.away = AwayWatch.forRun(fixture: fixture != nil, awaySince: options.awaySince)
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1320, height: 820),
@@ -73,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         if !options.background { window.setFrameAutosaveName("DeskWindow") }
         self.window = window
+        awayObserver = AwayObserver(model: model, window: window, now: { [store] in store.now })
         // A recording films a window that other windows may cover, so it keeps animating.
         if options.motionDir == nil && options.uiDir == nil {
             for name in [NSWindow.didChangeOcclusionStateNotification, NSWindow.didMiniaturizeNotification, NSWindow.didDeminiaturizeNotification] {

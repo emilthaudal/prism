@@ -49,6 +49,9 @@ struct BoardView: View {
             VStack(alignment: .leading, spacing: Space.m) {
                 // Just the name: the window's one status line says the rest.
                 Text("Board").font(.prismTitle).boardText()
+                if let digest = Away.digest(lastLooked: model.away.since, now: now, snapshot: s) {
+                    AwaySection(digest: digest, model: model, now: now).arrives("away")
+                }
                 // The board's first answer is always whether anything needs Emil.
                 if board.needsYou.isEmpty {
                     HStack(spacing: Space.s) {
@@ -187,17 +190,22 @@ struct BoardView: View {
 
 struct SectionHeading: View {
     var title: String
-    var count: Int
+    var count: String
 
     init(_ title: String, count: Int) {
         self.title = title
-        self.count = count
+        self.count = "\(count)"
+    }
+
+    init(_ title: String, detail: String) {
+        self.title = title
+        self.count = detail
     }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s) {
             Text(title).font(.callout.weight(.semibold)).foregroundStyle(.secondary)
-            Text("\(count)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+            Text(count).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
         }
         .padding(.top, Space.m)
         .boardText()

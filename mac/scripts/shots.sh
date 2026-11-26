@@ -55,6 +55,9 @@ fi
 export FIXTURE_OVERRIDE="$(dirname "$fixture")/serve-fixture-quiet.json"
 shot board-quiet-light light
 shot board-quiet-dark dark
+# While you were away: the fixture's clock reads 2026-11-24 13:32 UTC, so 8 hours before it is 05:32.
+shot board-away-light light --away-since 2026-11-24T05:32:00Z
+shot board-away-dark dark --away-since 2026-11-24T05:32:00Z
 unset FIXTURE_OVERRIDE
 
 # A batch: the fixture's recipe-search has three open questions; two are staged, the third shows on the card above the desk field.
