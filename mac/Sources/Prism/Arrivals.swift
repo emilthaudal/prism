@@ -78,7 +78,10 @@ struct ArrivalScroll<Content: View>: View {
             if pinned {
                 if animate, !reduce { withAnimation(Motion.arrive) { position.scrollTo(edge: .bottom) } } else { position.scrollTo(edge: .bottom) }
             }
-            recent = Set(new).subtracting(old)
+            // Only a change that animates leaves its rows fresh. A transcript's first load comes in while `before` is
+            // empty, so it doesn't animate and its rows appear at once; marked fresh, they went to opacity 0 as soon as
+            // `before` filled, after their onAppear had passed, and the whole transcript stayed blank.
+            recent = animate ? Set(new).subtracting(old) : []
             before = new
         }
         .onChange(of: scrollRequest) { _, request in
