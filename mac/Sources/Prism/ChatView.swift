@@ -208,14 +208,13 @@ struct DecisionChip: View {
     }
 }
 
-/// A session's report to the desk, as a card in the chat.
+/// A session's report to the desk, as text in the chat.
 struct ReportCard: View {
     var entry: ConversationEntry
     var session: Session?
     var readyToLand: Bool
     @State private var expanded = false
     @Environment(\.accessibilityReduceMotion) private var reduce
-    @Environment(WindowModel.self) private var model: WindowModel?
 
     /// The session's name, else the track stored on the report with "closed track", else "Closed session".
     private var name: String {
@@ -288,7 +287,8 @@ struct ReportCard: View {
                 }
             }
         }
-        .modifier(ReportMaterial(look: model?.lab.option("reports") ?? "card"))
+        // Text on the paper like Prism's own, told apart by its dot and name: glass and cards are for what takes an answer (EMI-483).
+        .conversationText()
     }
 
     private var color: Color {
@@ -308,20 +308,6 @@ struct ReportCard: View {
             return "blocked"
         case let other?: return other
         case nil: return ""
-        }
-    }
-}
-
-/// What a report in the conversation sits on (EMI-483 prototype; "card" is the build as it is).
-private struct ReportMaterial: ViewModifier {
-    var look: String
-
-    func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-        switch look {
-        case "plain": content.conversationText()
-        case "glass": content.padding(Theme.cardPadding).glassEffect(.regular, in: shape)
-        default: content.padding(Theme.cardPadding).background(Theme.cardFill, in: shape).overlay(shape.strokeBorder(Theme.hairline))
         }
     }
 }

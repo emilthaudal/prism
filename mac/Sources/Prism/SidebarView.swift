@@ -125,21 +125,19 @@ struct TrackRow: View {
     var expanded: Bool
     var now: Date
     var toggle: () -> Void
-    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
         let chip = row.chip(expanded: expanded)
-        let tree = model?.lab.option("tree") ?? "elbows"
         let lane = Theme.lane(Lane.of(row.id))
         // A track whose one session has stopped, and that waits on nobody, reads quieter than one at work.
         let quiet = row.nested.isEmpty && [.stopped, .idle].contains(row.primary?.state) && row.track.waitingOnPerson == nil
         HStack(spacing: Space.s) {
             LaneChip(color: lane, height: row.line == nil ? Theme.laneChip.height : Theme.laneChipTall)
-                // EMI-484 prototype: the chip runs on down to its sessions' line, which a row can't reach up to.
+                // The chip runs on down to its sessions' bar, which a row below can't reach up to.
                 .overlay(alignment: .top) {
-                    if expanded, !row.nested.isEmpty, tree != "elbows" {
-                        Rectangle().fill(lane.opacity(tree == "rail" ? 1 : 0.5))
-                            .frame(width: tree == "rail" ? Theme.laneChip.width : 1, height: Theme.treeReach)
+                    if expanded, !row.nested.isEmpty {
+                        Rectangle().fill(lane)
+                            .frame(width: Theme.laneChip.width, height: Theme.treeReach)
                             .offset(y: Theme.laneChip.height / 2)
                     }
                 }
