@@ -23,7 +23,7 @@ struct LoopsSection: View {
     }
 }
 
-/// One loop in the style of a track's brief: its goal, what it does now, its progress and a way to stop it.
+/// One loop: its goal, its progress and a way to stop it.
 struct LoopCard: View {
     var store: DeskStore
     var brief: LoopBrief
@@ -43,10 +43,10 @@ struct LoopCard: View {
                 Spacer(minLength: Space.xs)
                 Text(brief.loop.iteration).font(.prismMeta).foregroundStyle(.secondary).fixedSize()
             }
-            if brief.goal != nil || brief.now != nil {
+            // What the loop does now is on its sidebar row.
+            if brief.goal != nil {
                 Grid(alignment: .topLeading, horizontalSpacing: Space.s, verticalSpacing: Space.xxs) {
                     line("Goal", brief.goal)
-                    line("Now", brief.now)
                 }
             }
             ProgressView(value: brief.loop.fraction).controlSize(.small)

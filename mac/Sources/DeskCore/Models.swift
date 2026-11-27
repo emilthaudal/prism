@@ -68,6 +68,17 @@ public struct DeskInfo: Codable, Equatable, Sendable {
     }
 }
 
+/// One step on the way to a track's goal.
+public struct Milestone: Codable, Equatable, Sendable {
+    public var title: String
+    public var done: Bool
+
+    public init(title: String, done: Bool = false) {
+        self.title = title
+        self.done = done
+    }
+}
+
 public struct Track: Codable, Equatable, Sendable, Identifiable {
     public var id: String
     public var name: String
@@ -86,8 +97,10 @@ public struct Track: Codable, Equatable, Sendable, Identifiable {
     public var links: [String]?
     public var blockedBy: [String]?
     public var updatedAt: Date?
+    /// The steps to the goal, in order. Fixtures only so far: prism server does not send them yet (EMI-485).
+    public var milestones: [Milestone]?
 
-    public init(id: String, name: String, goal: String? = nil, mode: String = "focus", shownMode: String? = nil, tier: String? = nil, rank: Int? = nil, today: String? = nil, where: String? = nil, waitingOn: String? = nil, check: TrackCheck? = nil, links: [String]? = nil, blockedBy: [String]? = nil, updatedAt: Date? = nil) {
+    public init(id: String, name: String, goal: String? = nil, mode: String = "focus", shownMode: String? = nil, tier: String? = nil, rank: Int? = nil, today: String? = nil, where: String? = nil, waitingOn: String? = nil, check: TrackCheck? = nil, links: [String]? = nil, blockedBy: [String]? = nil, updatedAt: Date? = nil, milestones: [Milestone]? = nil) {
         self.id = id
         self.name = name
         self.goal = goal
@@ -102,7 +115,12 @@ public struct Track: Codable, Equatable, Sendable, Identifiable {
         self.links = links
         self.blockedBy = blockedBy
         self.updatedAt = updatedAt
+        self.milestones = milestones
     }
+
+    /// The first milestone not reached yet: what the track does next.
+    public var nextMilestone: Milestone? { milestones?.first { !$0.done } }
+    public var milestonesDone: Int { milestones?.filter(\.done).count ?? 0 }
 
     /// The group the sidebar puts the track in.
     public var shown: String { shownMode ?? mode }

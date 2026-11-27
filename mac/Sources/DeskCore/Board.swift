@@ -225,7 +225,8 @@ public struct Sidebar: Equatable, Sendable {
     /// The track row's second line: what its session does now, what the track waits on, its check and last
     /// answer, else what it last said.
     static func line(_ t: Track, primary: Session?, chip: StatusChip) -> String? {
-        if let p = primary, p.loop?.isLive == true { return p.loopLead(p.liveActivity.map(Activity.readable)) }
+        // A loop's iteration and deadline are on its board card; the row says what it does now.
+        if let p = primary, p.loop?.isLive == true, let now = p.liveActivity.map(Activity.readable) ?? p.lastAnswerGist { return now }
         if let a = primary?.liveActivity { return Activity.readable(a) }
         // As written: notes start lowercase already, and a note can start with a name ("Alex").
         if case .waitingOn(let who, _) = chip { return t.check?.blocker == who ? who : "Waits on " + who }

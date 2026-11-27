@@ -564,14 +564,24 @@ extension View {
     func targetID(_ id: String) -> some View { environment(\.targetID, id) }
 }
 
-/// A sidebar row's hover and pressed shade, the strengths of RowButtonStyle's, drawn only while a demo script holds the row.
+/// A sidebar row's hover and pressed shade, the strengths of RowButtonStyle's: under the pointer, or while a demo script
+/// holds the row. Only rows that open something carry it, so a row with no shade (a subagent) reads as not clickable.
+/// The selected row has the list's own highlight and takes no shade.
 struct ScriptedShade: ViewModifier {
     var id: String
     var model: WindowModel
+    var item: SidebarItem? = nil
+    @State private var pointerOver = false
 
     func body(content: Content) -> some View {
-        let shade = model.pressedTarget == id ? 0.09 : (model.hoveredTarget == id ? 0.05 : 0)
-        content.background(RoundedRectangle(cornerRadius: Space.s, style: .continuous).fill(Color.primary.opacity(shade)))
+        let hovering = (pointerOver || model.hoveredTarget == id) && (item == nil || model.selection != item)
+        let shade = model.pressedTarget == id ? 0.09 : (hovering ? 0.05 : 0)
+        content
+            // The list's highlight reaches past the row's content; the shade fills the same box.
+            .background(RoundedRectangle(cornerRadius: Space.s, style: .continuous).fill(Color.primary.opacity(shade)).padding(.horizontal, -Space.s + Space.xxs).padding(.vertical, -Space.xs))
+            .contentShape(Rectangle())
+            .onHover { pointerOver = $0 }
+            .animation(.easeOut(duration: 0.12), value: shade)
     }
 }
 

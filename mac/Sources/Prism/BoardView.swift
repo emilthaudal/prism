@@ -1,7 +1,7 @@
 import DeskCore
 import SwiftUI
 
-/// The board: Needs you, In flight, Ready to land, and Landed folded.
+/// The board: Needs you, Reports, Tracks with their milestones, Loops, Ready to land, and Landed folded.
 struct BoardView: View {
     var store: DeskStore
     var model: WindowModel
@@ -23,13 +23,6 @@ struct BoardView: View {
     /// Entries handled on today's calendar day; the full log waits behind "Show all".
     static func handledToday(_ entries: [Handled], now: Date) -> Int {
         BoardPlan.handledToday(entries, now: now).count
-    }
-
-    /// A live loop's label first, then what the session does now, then how long ago.
-    static func inFlightDetail(_ session: Session, now: Date) -> String {
-        let doing = session.liveActivity.map(Activity.readable) ?? session.state.rawValue
-        let lead = session.loopLead(doing) ?? doing
-        return [lead, Theme.ago(session.updatedAt, now: now)].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
     /// The track's name, or "Prism" for what the desk noted for itself.
@@ -63,7 +56,7 @@ struct BoardView: View {
                         Spacer(minLength: 0)
                     }
                     .boardText()
-                    QuietBoard(plan: BoardPlan(s, now: now), store: store, model: model, loops: loops, now: now)
+                    QuietBoard(plan: BoardPlan(s, now: now))
                         .arrives("quiet")
                 }
                 if !board.needsYou.isEmpty {
@@ -90,16 +83,10 @@ struct BoardView: View {
                             .arrives(session.id)
                     }
                 }
-                if !board.needsYou.isEmpty {
-                    LoopsSection(store: store, model: model, loops: loops, now: now)
-                }
-                if !board.inFlight.isEmpty {
-                    SectionHeading("In flight", count: board.inFlight.count)
-                    ForEach(board.inFlight) { session in
-                        LaneRow(session: session, detail: Self.inFlightDetail(session, now: now)) { model.selection = .session(session.id) }
-                        .arrives(session.id)
-                    }
-                }
+                // A card per open track with its goal and milestones, then the loops. What a session does now is the
+                // sidebar's to say, so the board has no In flight list (EMI-481).
+                MilestoneSection(store: store, model: model, now: now)
+                LoopsSection(store: store, model: model, loops: loops, now: now)
                 if !board.readyToLand.isEmpty {
                     SectionHeading("Ready to land", count: board.readyToLand.count)
                     ForEach(board.readyToLand) { session in
