@@ -38,9 +38,6 @@ final class WindowModel {
     /// The targets a demo script holds hovered and pressed with no pointer; views compare their own `targetID` with them.
     var hoveredTarget: String?
     var pressedTarget: String?
-    /// EMI-477 prototype: how answering a decision feels, and whether the picker over the composer shows.
-    var feel: Feel = .today
-    var feelPicker = false
 
     /// Shows a row pressed for a moment, as a digit key's echo.
     func flash(_ target: String) {
