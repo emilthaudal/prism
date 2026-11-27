@@ -39,10 +39,12 @@ struct Lab: Equatable {
             "Today: each limit is a bar with its reset time on a line below.",
             "Each limit is one line; the reset time takes the percentage's place under the pointer.",
         ]),
-        Choice(number: 7, surface: "Board", key: "cards", title: "Board cards", options: ["mixed", "even", "ranked"], notes: [
+        Choice(number: 7, surface: "Board", key: "cards", title: "Board cards", options: ["mixed", "even", "ranked", "lined", "grouped"], notes: [
             "Today: decisions and reports have a fill and a hairline, tracks and loops a fill alone.",
             "One card for everything on the board: the fill and the hairline.",
             "Only a decision is a card. Reports, tracks and loops are rows on the board's glass and shade under the pointer.",
+            "Ranked, with body: each section's rows sit close with a hairline between them, and a decision's card is lifted to a lighter fill.",
+            "Ranked, with body: each section's rows share one soft sheet with hairlines between them, and a decision's card is lifted to a lighter fill.",
         ]),
     ]
 
@@ -68,6 +70,32 @@ struct Lab: Equatable {
                 throw LaunchOptions.Invalid(description: "--lab takes \(Lab.choices.map { "\($0.key)=\($0.options.joined(separator: "|"))" }.joined(separator: ",")): \(part)")
             }
             picks[i] = o
+        }
+    }
+}
+
+/// EMI-480 prototype: a board section's rows. Under "lined" and "grouped" they sit close with hairlines between them, and
+/// "grouped" puts one soft sheet under the section; otherwise each is laid out on its own as before.
+struct BoardGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+    @Environment(WindowModel.self) private var model: WindowModel?
+
+    var body: some View {
+        let look = model?.lab.option("cards") ?? "mixed"
+        if look == "lined" || look == "grouped" {
+            let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+            VStack(alignment: .leading, spacing: Space.none) {
+                Group(subviews: content) { rows in
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                        if i > 0 { Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, Theme.boardCardPadding) }
+                        row
+                    }
+                }
+            }
+            .background(look == "grouped" ? Theme.cardFill : .clear, in: shape)
+            .clipShape(shape)
+        } else {
+            VStack(alignment: .leading, spacing: Space.m) { content }
         }
     }
 }

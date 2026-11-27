@@ -78,9 +78,11 @@ struct BoardView: View {
                 }
                 if !board.reports.isEmpty {
                     SectionHeading("Reports", count: board.reports.count)
-                    ForEach(board.reports) { session in
-                        DoneReport(store: store, session: session) { model.selection = .session(session.id) }
-                            .arrives(session.id)
+                    BoardGroup {
+                        ForEach(board.reports) { session in
+                            DoneReport(store: store, session: session) { model.selection = .session(session.id) }
+                                .arrives(session.id)
+                        }
                     }
                 }
                 // A card per open track with its goal and milestones, then the loops. What a session does now is the
@@ -296,7 +298,7 @@ struct QuestionCard: View {
 
     var body: some View {
         Button(action: pick) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true, decides: true))
             .targetID("card:\(question.id)")
     }
 

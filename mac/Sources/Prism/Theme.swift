@@ -603,6 +603,8 @@ struct RowButtonStyle: ButtonStyle {
     var card = false
     /// EMI-480 prototype: a board card that informs (a report, a track, a loop), which the lab's "cards" choice redraws.
     var informs = false
+    /// EMI-480 prototype: a decision's card, lifted to a lighter fill where the rows around it have no card.
+    var decides = false
 
     func makeBody(configuration: Configuration) -> some View {
         Target(configuration: configuration, style: self)
@@ -615,6 +617,7 @@ struct RowButtonStyle: ButtonStyle {
         @Environment(\.targetID) private var targetID
         @Environment(WindowModel.self) private var model: WindowModel?
         @State private var pointerOver = false
+        @Environment(\.colorScheme) private var scheme
 
         var body: some View {
             let scripted = targetID != nil && model?.hoveredTarget == targetID
@@ -622,10 +625,13 @@ struct RowButtonStyle: ButtonStyle {
             let pressed = configuration.isPressed || (targetID != nil && model?.pressedTarget == targetID)
             let shade = pressed ? 0.09 : (hovering && enabled ? 0.05 : 0)
             let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
-            let look = style.informs ? (model?.lab.option("cards") ?? "mixed") : "mixed"
-            let outlined = look == "even" || (style.card && look != "ranked")
+            let cards = model?.lab.option("cards") ?? "mixed"
+            let look = style.informs ? cards : "mixed"
+            let rows = ["ranked", "lined", "grouped"].contains(look)
+            let outlined = look == "even" || (style.card && !rows)
+            let lifted = style.decides && (cards == "lined" || cards == "grouped")
             configuration.label
-                .background(shape.fill(look == "ranked" ? Color.clear : style.fill))
+                .background(shape.fill(rows ? Color.clear : (lifted ? Color.white.opacity(scheme == .dark ? 0.08 : 0.5) : style.fill)))
                 .background(shape.fill(Color.primary.opacity(shade)))
                 .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
