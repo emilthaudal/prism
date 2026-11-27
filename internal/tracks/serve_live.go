@@ -464,7 +464,7 @@ func (l *liveSource) act(ctx context.Context, kind, id, action string, body json
 	case "sessions":
 		return l.session(ctx, id, action)
 	case "tracks":
-		return l.track(id, action, in.Mode, in.Swap)
+		return l.track(ctx, id, action, in.Mode, in.Swap)
 	case "handled":
 		return l.undoHandled(id, action)
 	}
@@ -656,7 +656,7 @@ var attachInRex = func(ctx context.Context, label, cwd, short string) error {
 	return nil
 }
 
-func (l *liveSource) track(id, action, mode, swap string) (int, any, error) {
+func (l *liveSource) track(ctx context.Context, id, action, mode, swap string) (int, any, error) {
 	var views []store.View
 	if err := withBareStore(func(st *store.Store) (err error) { views, err = st.LiveTracks(); return err }); err != nil {
 		return 0, nil, err
@@ -681,6 +681,15 @@ func (l *liveSource) track(id, action, mode, swap string) (int, any, error) {
 			return 0, nil, err
 		}
 	case "open":
+		// A track the desk runs in the background has no Rex session of its own: opening it
+		// attaches to that session, which stays the desk's until Emil types into it.
+		if s, ok := bgSession(name); ok && s.Host != "stopped" {
+			short := shortID(s.ID)
+			if err := attachInRex(ctx, name, s.Cwd, short); err != nil {
+				return http.StatusOK, map[string]string{"command": "claude attach " + short}, nil
+			}
+			return http.StatusOK, nil, nil
+		}
 		if err := open([]string{name}, io.Discard, palette{}); err != nil {
 			return 0, nil, err
 		}

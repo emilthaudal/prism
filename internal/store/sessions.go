@@ -278,10 +278,16 @@ func handBack(tx *wtx, e SessionEvent, now time.Time) error {
 	if harnessPrompt(e.Prompt) {
 		return nil
 	}
-	_, err := tx.Exec(`UPDATE sessions SET owner = 'emil' WHERE id = ? AND owner = 'desk' AND NOT EXISTS (
+	res, err := tx.Exec(`UPDATE sessions SET owner = 'emil' WHERE id = ? AND owner = 'desk' AND NOT EXISTS (
 		SELECT 1 FROM messages WHERE session_id = ? AND delivered_at >= ? AND trim(text, ' '||char(9)||char(10)||char(13)) = ?)`,
 		e.ID, e.ID, fmtTime(now.Add(-handBackWindow)), strings.TrimSpace(e.Prompt))
-	return err
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil || n == 0 {
+		return err
+	}
+	return closeForEmil(tx, e.ID, now)
 }
 
 // harnessPrompt is whether a prompt is one Claude Code wrote itself: a background task's

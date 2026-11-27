@@ -68,6 +68,7 @@ actor ScriptedClient: DeskClient {
         actions.append(action)
         if let e = failNextAction { failNextAction = nil; throw e }
         if case .takeover = action { return ActionReply(command: "claude attach abc") }
+        if case .open = action { return ActionReply(command: "claude attach abc") }
         return reply
     }
 

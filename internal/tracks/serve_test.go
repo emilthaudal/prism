@@ -225,6 +225,67 @@ func TestServeAnswersAndClosesQuestionsAsEmil(t *testing.T) {
 	}
 }
 
+func TestServeTakeoverClosesTheTracksOpenAsks(t *testing.T) {
+	_, c := liveHome(t)
+	id := fullID("aaaaaaa1")
+	var asked store.Question
+	err := withBareStore(func(st *store.Store) error {
+		if err := st.StartDeskSession(store.DeskStart{ID: id, Parent: deskClaude, Track: "solo", Name: "solo", Prompt: "/track solo"}); err != nil {
+			return err
+		}
+		if err := st.AddAsk("solo", "Sign in to the pantry MCP server? 1) yes 2) no. Recommend: 1"); err != nil {
+			return err
+		}
+		qs, err := st.OpenQuestions()
+		if i := slices.IndexFunc(qs, func(q store.Question) bool { return q.AskID != 0 && q.Track == "solo" }); i >= 0 {
+			asked = qs[i]
+		}
+		return err
+	})
+	if err != nil || asked.ID == 0 {
+		t.Fatalf("no question mirrors the ask: %v", err)
+	}
+	if code, _ := c.post("/v1/sessions/"+id+"/takeover", ""); code != 200 {
+		t.Fatalf("takeover: %d", code)
+	}
+	var q store.Question
+	if err := withBareStore(func(st *store.Store) (err error) { q, err = st.GetQuestion(asked.ID); return err }); err != nil {
+		t.Fatal(err)
+	}
+	if q.Open() || !strings.Contains(q.AnswerText, "the session is Emil's now") {
+		t.Errorf("the ask is still answerable after takeover: open %v, note %q", q.Open(), q.AnswerText)
+	}
+}
+
+func TestServeOpenAttachesToTheDesksBackgroundSession(t *testing.T) {
+	_, c := liveHome(t)
+	id := fullID("aaaaaaa1")
+	if err := withBareStore(func(st *store.Store) error {
+		return st.StartDeskSession(store.DeskStart{ID: id, Parent: deskClaude, Track: "solo", Name: "solo", Prompt: "/track solo", Cwd: "/work/solo"})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	solo := c.snapshot().Tracks
+	trackID := solo[len(solo)-1].ID
+	if code, v := c.post("/v1/tracks/"+trackID+"/open", ""); code != 200 || v["command"] != "claude attach aaaaaaa1" {
+		t.Errorf("open without Rex: %d %v", code, v)
+	}
+	var attached []string
+	attachInRex = func(_ context.Context, label, cwd, short string) error {
+		attached = append(attached, label, cwd, short)
+		return nil
+	}
+	if code, v := c.post("/v1/tracks/"+trackID+"/open", ""); code != 200 || len(v) != 0 {
+		t.Errorf("open: %d %v", code, v)
+	}
+	if !slices.Equal(attached, []string{"solo", "/work/solo", "aaaaaaa1"}) {
+		t.Errorf("attached %v", attached)
+	}
+	if s, _ := deskSessionRow(t, id); s.Owner != "desk" {
+		t.Errorf("opening it took it over: %+v", s)
+	}
+}
+
 func TestServeSessionActions(t *testing.T) {
 	desk, c := liveHome(t)
 	id := fullID("aaaaaaa1")

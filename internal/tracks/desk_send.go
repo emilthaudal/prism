@@ -367,7 +367,7 @@ func awaitPromptAnswerNote(session string, id int64, wait time.Duration, timeout
 			return q, false
 		case owner != "desk":
 			_ = withBareStore(func(st *store.Store) error {
-				_, err := st.TimeOutQuestion(id, "closed: the session is Emil's now, answer it there")
+				_, err := st.TimeOutQuestion(id, store.EmilsNowNote)
 				return err
 			})
 			return q, false
