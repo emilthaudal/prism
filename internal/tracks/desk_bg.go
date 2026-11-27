@@ -105,7 +105,7 @@ func writeDeskSettings(name, exe, dir, parent, prompt string) (string, error) {
 		deskParentEnv: parent,
 		deskPromptEnv: prompt,
 	}
-	doc := leanSettings(dir)
+	doc := leanSettings(dir, worksOnArtifact(name))
 	doc["env"], doc["hooks"] = env, hooks
 	b, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {

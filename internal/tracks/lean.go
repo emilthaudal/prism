@@ -3,6 +3,7 @@ package tracks
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -33,8 +34,9 @@ func underDir(dir, root string) bool {
 // off everywhere, comma-separated, as name@marketplace. TRACKS_DIR_PLUGINS lists DIR=plugin
 // pairs, comma-separated: such a plugin stays on for tracks whose dir is under DIR (one of them,
 // when it is named more than once) and is off everywhere else. They apply to the session's
-// process, so its subagents get them too.
-func leanSettings(dir string) map[string]any {
+// process, so its subagents get them too. A track that works on an artifact keeps the Artifact
+// tool (EMI-471).
+func leanSettings(dir string, artifacts bool) map[string]any {
 	plugins := map[string]bool{}
 	for _, p := range envList("TRACKS_LEAN_PLUGINS_OFF") {
 		plugins[p] = false
@@ -59,9 +61,26 @@ func leanSettings(dir string) map[string]any {
 	for _, s := range append(append([]string{}, leanSkillsOff...), envList("TRACKS_LEAN_SKILLS_OFF")...) {
 		skills[s] = "off"
 	}
-	return map[string]any{
+	doc := map[string]any{
 		"enabledPlugins": plugins,
 		"skillOverrides": skills,
-		"permissions":    map[string]any{"deny": []string{"Artifact"}},
 	}
+	if !artifacts {
+		doc["permissions"] = map[string]any{"deny": []string{"Artifact"}}
+	}
+	return doc
+}
+
+// artifactLink finds a claude.ai artifact link, such as https://claude.ai/artifact/ID or
+// https://claude.ai/code/artifact/ID.
+var artifactLink = regexp.MustCompile(`claude\.ai/(?:code/)?artifact/`)
+
+// worksOnArtifact says whether track name's Goal or links name a claude.ai artifact, so that its
+// session needs the Artifact tool.
+func worksOnArtifact(name string) bool {
+	c, err := loadCard(name)
+	if err != nil {
+		return false
+	}
+	return artifactLink.MatchString(c.Sections["Goal"] + "\n" + c.Meta["links"])
 }
