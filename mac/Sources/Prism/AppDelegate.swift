@@ -89,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.overnightSeed = OvernightLoop(goal: "Get p95 of /search under 120 ms on the bench set. Measure with make bench.", folder: "~/code/pantry-api", until: .sevenOClock)
             model.overnightShown = true
         }
+        if let lab = options.lab, fixture != nil {
+            model.lab = lab
+            model.labShown = true
+        }
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
@@ -222,6 +226,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         // ⇧⌘L is the menu's Run Overnight, not ⌘L.
         if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
+        if model.labShown, flags == .option, let n = Int(key.characters), Lab.choices.indices.contains(n - 1) {
+            model.lab.step(n - 1)
+            return true
+        }
         let editing = window?.firstResponder is NSTextView
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.

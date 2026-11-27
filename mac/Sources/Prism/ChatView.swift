@@ -215,6 +215,7 @@ struct ReportCard: View {
     var readyToLand: Bool
     @State private var expanded = false
     @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     /// The session's name, else the track stored on the report with "closed track", else "Closed session".
     private var name: String {
@@ -287,9 +288,7 @@ struct ReportCard: View {
                 }
             }
         }
-        .padding(Theme.cardPadding)
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).strokeBorder(Theme.hairline))
+        .modifier(ReportMaterial(look: model?.lab.option("reports") ?? "card"))
     }
 
     private var color: Color {
@@ -309,6 +308,20 @@ struct ReportCard: View {
             return "blocked"
         case let other?: return other
         case nil: return ""
+        }
+    }
+}
+
+/// What a report in the conversation sits on (EMI-483 prototype; "card" is the build as it is).
+private struct ReportMaterial: ViewModifier {
+    var look: String
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+        switch look {
+        case "plain": content.conversationText()
+        case "glass": content.padding(Theme.cardPadding).glassEffect(.regular, in: shape)
+        default: content.padding(Theme.cardPadding).background(Theme.cardFill, in: shape).overlay(shape.strokeBorder(Theme.hairline))
         }
     }
 }
@@ -395,6 +408,53 @@ struct OwnerBar: View {
     @FocusState private var focus: ComposerField?
 
     var body: some View {
+        if model.lab.option("owner") == "glass" { glass } else { line }
+    }
+
+    /// EMI-483 prototype: the bar is the piece of glass the message field is in the desk's chat, at the same place and
+    /// radius, and a decision above it is a second piece.
+    private var glass: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous)
+        return GlassEffectContainer(spacing: Space.xs) {
+            VStack(spacing: Space.s) {
+                if let q = model.activeQuestion(in: store.snapshot), q.session == session.id {
+                    QuestionComposer(store: store, model: model, question: q, position: nil, focus: $focus)
+                        .glassEffect(.regular, in: shape)
+                        .onChange(of: model.focus) { _, request in
+                            if let request, request.field != .desk { focus = request.field }
+                        }
+                }
+                HStack(spacing: Space.m) {
+                    Image(systemName: session.isEmils ? "person" : "apple.terminal").foregroundStyle(.secondary)
+                    Text(session.isEmils ? "Yours. Prism leaves it alone." : "Prism's session. Read-only here.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if session.isEmils {
+                        Button { Task { await store.giveBack(session.id) } } label: {
+                            HStack(spacing: Space.s) { Text("Give Back to Prism"); KeyHint(text: "g") }
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button { Task { await store.takeOver(session.id) } } label: {
+                            HStack(spacing: Space.xs) { Text("Take Over"); Text("t").font(.callout.monospaced()).opacity(0.6) }
+                                .font(.callout.weight(.semibold))
+                        }
+                        .buttonStyle(InkButtonStyle())
+                    }
+                }
+                .font(.callout)
+                .padding(.horizontal, Space.l)
+                .padding(.vertical, Space.m)
+                .glassEffect(.regular, in: shape)
+            }
+        }
+        .padding(.horizontal, Space.m)
+        .padding(.bottom, Space.l)
+        .frame(maxWidth: Theme.chatMaxWidth)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var line: some View {
         VStack(spacing: Space.s) {
             if let q = model.activeQuestion(in: store.snapshot), q.session == session.id {
                 QuestionComposer(store: store, model: model, question: q, position: nil, focus: $focus)
