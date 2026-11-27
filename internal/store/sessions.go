@@ -33,6 +33,9 @@ const (
 	SessionAgentQueued = "agent_queued"
 	SessionAgentStart  = "agent_start"
 	SessionAgentStop   = "agent_stop"
+	// SessionAgentTool is a tool a subagent is about to use: a session blocked while its own
+	// agent waits on the Agent tool waited on that subagent's prompt, which is answered now.
+	SessionAgentTool = "agent_tool"
 )
 
 // backfillSessions gives every open track that has a Claude session a sessions row.
@@ -138,6 +141,9 @@ func (s *Store) SessionHook(e SessionEvent) error {
 			}
 		case SessionAgentStart:
 			err = agentStarted(tx, e, at)
+		case SessionAgentTool:
+			_, err = tx.Exec(`UPDATE sessions SET status = 'working', waiting_for = '', updated_at = ? WHERE id = ? AND status = 'blocked'
+				AND (activity IN ('Agent', 'Task') OR activity LIKE 'Agent: %' OR activity LIKE 'Task: %')`, at, e.ID)
 		case SessionAgentStop:
 			_, err = tx.Exec(`INSERT INTO session_subagents (session_id, agent_id, name, status, updated_at) VALUES (?, ?, ?, 'done', ?)
 				ON CONFLICT(session_id, agent_id) DO UPDATE SET status = 'done', updated_at = excluded.updated_at`, e.ID, e.AgentID, e.AgentName, at)
