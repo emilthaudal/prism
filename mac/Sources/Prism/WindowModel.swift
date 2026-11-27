@@ -40,6 +40,44 @@ final class WindowModel {
     /// False while `make ui-check` records: a still shows the state its script sets, never the real pointer's (EMI-486).
     var pointerLive = true
     var pressedTarget: String?
+    /// EMI-488 prototypes: the options picked, and whether the picker shows (--lab, fixture only).
+    var lab = Lab()
+    var labShown = false
+    /// The conversation entry to bring to the top.
+    var jumpRequest: JumpRequest?
+    /// The message a jump landed on, shaded for a moment.
+    var landed: String?
+    /// The messages of Prism's kept on the board, in the order kept. In memory only while this is a prototype.
+    var kept: [String] = []
+    /// The message of Emil's the last step or mark went to; nil at the bottom.
+    var askedCursor: String?
+    /// Emil's messages on screen, for the rail.
+    var askedVisible: Set<String> = []
+
+    struct JumpRequest: Equatable {
+        var entry: String
+        var id = UUID()
+    }
+
+    func jump(to entry: String, landing: String? = nil) {
+        jumpRequest = JumpRequest(entry: entry)
+        landed = landing
+        guard let landing else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(1800))
+            if landed == landing { landed = nil }
+        }
+    }
+
+    /// Steps to the message of Emil's before (-1) or after (+1) the last one stepped to; past the newest is the bottom.
+    func stepAsked(_ delta: Int, in s: Snapshot) {
+        askedCursor = Answers.step(from: askedCursor, by: delta, in: Answers.asked(s.conversation).map(\.id))
+        if let askedCursor { jump(to: askedCursor) } else { scroll("bottom") }
+    }
+
+    func toggleKept(_ id: String) {
+        if let i = kept.firstIndex(of: id) { kept.remove(at: i) } else { kept.append(id) }
+    }
 
     /// Shows a row pressed for a moment, as a digit key's echo.
     func flash(_ target: String) {

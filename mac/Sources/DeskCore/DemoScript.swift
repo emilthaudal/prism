@@ -24,7 +24,7 @@ public struct DemoScript: Decodable, Equatable, Sendable {
         /// `make ui-check`: takes a still of the window under this name once the action has settled.
         public var shot: String?
 
-        private enum CodingKeys: String, CodingKey { case name, at, `do`, event, events, direction, question, option, track, mode, fold, target, field, item, text, expect, continuous, crossfade, again, shot }
+        private enum CodingKeys: String, CodingKey { case name, at, `do`, event, events, direction, question, option, track, mode, fold, target, field, item, text, entry, expect, continuous, crossfade, again, shot }
 
         public init(name: String, at: Double, action: Action, expect: Double? = nil, continuous: Bool = false, crossfade: Bool = false, again: Double? = nil, shot: String? = nil) {
             self.name = name
@@ -61,6 +61,8 @@ public struct DemoScript: Decodable, Equatable, Sendable {
             case "select": action = .select(try c.decode(String.self, forKey: .item))
             case "dismiss": action = .dismiss
             case "draft": action = .draft(try c.decodeIfPresent(String.self, forKey: .text) ?? "")
+            case "jump": action = .jump(try c.decode(String.self, forKey: .entry))
+            case "keep": action = .keep(try c.decode(String.self, forKey: .entry))
             case "wait": action = .wait
             case let other: throw DecodingError.dataCorruptedError(forKey: .do, in: c, debugDescription: "unknown step \(other)")
             }
@@ -96,6 +98,10 @@ public struct DemoScript: Decodable, Equatable, Sendable {
         case dismiss
         /// Sets the text of the message to the desk.
         case draft(String)
+        /// EMI-488 lab: brings a conversation entry to the top, as a click on its mark or its board row does.
+        case jump(String)
+        /// EMI-488 lab: keeps a message of Prism's on the board, or lets it go.
+        case keep(String)
         /// Changes nothing; the step names what happens on its own, such as a countdown running out.
         case wait
     }

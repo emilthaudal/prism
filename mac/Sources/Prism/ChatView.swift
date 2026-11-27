@@ -9,7 +9,9 @@ struct ChatView: View {
     var body: some View {
         let s = store.snapshot
         let board = store.board
-        ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible) {
+        let marks = model.lab.option("asked") == "marks"
+        let keeps = model.lab.option("answers") == "kept"
+        ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible, jumpRequest: model.jumpRequest, backAtBottom: { model.askedCursor = nil }) {
             LazyVStack(alignment: .leading, spacing: Space.none) {
                 let kinds = s.conversation.map { Self.kind(of: $0) }
                 ForEach(Array(s.conversation.enumerated()), id: \.element.id) { i, entry in
@@ -17,7 +19,7 @@ struct ChatView: View {
                     Group {
                         switch entry.role {
                         case "emil":
-                            EmilBubble(text: entry.text)
+                            EmilBubble(text: entry.text).modifier(AskedVisibility(id: entry.id, model: model, on: marks))
                         case "report":
                             let session = s.session(entry.session)
                             ReportCard(entry: entry, session: session, readyToLand: session.map { board.readyToLand.contains($0) } ?? false)
@@ -33,6 +35,7 @@ struct ChatView: View {
                                         DecisionRecord(question: q)
                                     }
                                 }
+                                .modifier(AnswerMarks(id: entry.id, model: model, keeps: keeps))
                             }
                         }
                     }
@@ -40,12 +43,15 @@ struct ChatView: View {
                     .arrives(entry.id)
                 }
             }
+            // Each entry is a place a jump can land (EMI-488).
+            .scrollTargetLayout()
             .padding(.horizontal, Space.m)
             .padding(.vertical, Space.xl)
             .frame(maxWidth: Theme.chatMaxWidth)
             .frame(maxWidth: .infinity)
         }
         .scrollsBelowTitle()
+        .overlay { if marks { AskedRail(entries: s.conversation, model: model) } }
     }
 
     private static func kind(of entry: ConversationEntry) -> Rhythm.Kind {

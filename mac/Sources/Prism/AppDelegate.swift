@@ -89,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.overnightSeed = OvernightLoop(goal: "Get p95 of /search under 120 ms on the bench set. Measure with make bench.", folder: "~/code/pantry-api", until: .sevenOClock)
             model.overnightShown = true
         }
+        if let lab = options.lab, fixture != nil {
+            model.lab = lab
+            model.labShown = true
+        }
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
@@ -224,6 +228,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ⇧⌘L is the menu's Run Overnight, not ⌘L.
         if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
         let editing = window?.firstResponder is NSTextView
+        // The arrow keys carry the function and keypad flags of their own.
+        if model.labShown, flags.subtracting([.numericPad, .function]) == .option {
+            if let n = Int(key.characters), let i = Lab.choices.firstIndex(where: { $0.number == n }) {
+                model.lab.step(i)
+                return true
+            }
+            // In a message being typed the arrows keep moving the cursor.
+            let typing = editing && !model.draft.isEmpty
+            if model.lab.option("asked") == "marks", [125, 126].contains(event.keyCode), !typing, model.session(in: store.snapshot) == nil {
+                model.stepAsked(event.keyCode == 126 ? -1 : 1, in: store.snapshot)
+                return true
+            }
+        }
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.
         if command == .sendStaged, editing, !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
