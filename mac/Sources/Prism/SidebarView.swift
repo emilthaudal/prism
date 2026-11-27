@@ -37,13 +37,15 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // The list is built anew when the bar above it comes or goes. A bar put over a list that is already laid out
+        // changed its top inset late, and the rows then rested 1 to 3 px apart from one launch to the next (EMI-486).
+        .id(sidebar.waitingOnYou > 0)
         .animation(model.windowVisible ? Motion.moves(Motion.quick, reduce: reduce) : nil, value: sidebar.structure)
         // The usage limits at the sidebar's foot (EMI-408): outside the list's scrolling, gone with the sidebar.
         .safeAreaBar(edge: .bottom, spacing: Space.none) { SidebarFoot(store: store) }
-        // Always there, its count dimmed at 0: a bar that comes and goes changes the list's top inset after the first layout,
-        // and the rows then rest 1 to 3 px apart from one launch to the next (EMI-486).
+        // The count shows only while something waits; the board's "Nothing needs you" covers the quiet case.
         .safeAreaBar(edge: .top, spacing: Space.none) {
-            WaitingHeader(count: sidebar.waitingOnYou)
+            if sidebar.waitingOnYou > 0 { WaitingHeader(count: sidebar.waitingOnYou).transition(Motion.needsYouTransition(reduce: reduce)) }
         }
         .onChange(of: model.foldRequest) { _, request in
             guard let id = request?.target.split(separator: ":", maxSplits: 1).last, request?.target.hasPrefix("track:") == true,
@@ -249,22 +251,19 @@ struct ChipIcon: View {
     var lane: Color? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduce
-    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
-        let shapes = model?.lab.option("marks") == "shapes"
+        // One shape per state, so no two differ by colour alone: a turning ring at work, a dot for finished, a ring once
+        // seen or stopped, a short bar for idle, the board's diamond for what needs Emil (EMI-484).
         ZStack {
             switch chip {
             case .working: Spinner(color: lane).transition(Motion.fadeTransition)
-            case .idle where shapes: StatusDash(color: Theme.queued).transition(Motion.fadeTransition)
-            case .question where shapes: StatusDiamond(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
-            case .permission where shapes, .error where shapes: StatusDiamond(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
             case .doneUnseen: Dot(color: Theme.done).transition(Motion.fadeTransition)
             case .done: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
-            case .idle: Dot(color: Theme.queued).transition(Motion.fadeTransition)
+            case .idle: StatusDash(color: Theme.queued).transition(Motion.fadeTransition)
             case .stopped: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
-            case .question: Dot(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
-            case .permission, .error: Dot(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
+            case .question: StatusDiamond(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
+            case .permission, .error: StatusDiamond(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
             default: Color.clear.frame(width: Theme.dotSize, height: Theme.dotSize)
             }
         }
@@ -272,7 +271,7 @@ struct ChipIcon: View {
     }
 }
 
-/// EMI-484 prototype: idle as a short bar at the weight of the lane lines, drawn like the dot and the ring, not a glyph.
+/// Idle: a short bar at the weight of the lane lines, drawn like the dot and the ring, not a glyph.
 struct StatusDash: View {
     var color: Color
 
@@ -282,15 +281,16 @@ struct StatusDash: View {
     }
 }
 
-/// EMI-484 prototype: what needs you as the board's diamond, at the dot's weight.
+/// What needs Emil: one diamond for a session's row, a report and a decision's card, at the dot's weight by default.
 struct StatusDiamond: View {
     var color: Color
+    var size = Theme.dotSize
 
     var body: some View {
         RoundedRectangle(cornerRadius: 1, style: .continuous).fill(color)
-            .frame(width: Theme.dotSize - 1, height: Theme.dotSize - 1)
+            .frame(width: size - 1, height: size - 1)
             .rotationEffect(.degrees(45))
-            .frame(width: Theme.dotSize, height: Theme.dotSize)
+            .frame(width: size, height: size)
     }
 }
 

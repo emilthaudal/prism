@@ -336,9 +336,8 @@ struct QuestionCard: View {
         let counting = store.answers.pending(for: question.id) != nil || store.answers.batch(containing: question.id) != nil
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(spacing: Space.s) {
-                Image(systemName: "diamond.fill")
-                    .font(.prismMeta)
-                    .foregroundStyle(permission ? Theme.alert : Theme.question)
+                // The same diamond as a session's row that needs Emil, at the card's size.
+                StatusDiamond(color: permission ? Theme.alert : Theme.question, size: Theme.spinnerSize)
                 Text(question.id).font(.prismID).foregroundStyle(.secondary).fixedSize()
                 if let lane = Theme.lane(of: track?.id) { LaneChip(color: lane) }
                 Text(track?.name ?? session?.displayName ?? "Prism").font(.callout.weight(.semibold)).lineLimit(1).layoutPriority(1)

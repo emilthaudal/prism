@@ -10,7 +10,7 @@ MOTION_OUT ?= build/motion
 UI_SCRIPT ?= scripts/ui-sample.json
 UI_OUT ?= build/ui
 
-.PHONY: build test app icon install run demo lab shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
+.PHONY: build test app icon install run demo shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
 
 build:
 	swift build
@@ -61,11 +61,6 @@ run: app
 # Runs the app on the fixture, actions applied in memory; no tracks serve needed.
 demo: app
 	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))"
-
-# EMI-477 prototypes: the fixture with the option picker over the conversation (⌥5 status marks, ⌥6 usage).
-# LAB=marks=shapes opens on that pick; FIXTURE=../mock/serve-fixture-quiet.json shows the quiet board.
-lab: app
-	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))" --lab "$(or $(LAB),on)"
 
 # Captures the window from the fixture in light and dark into docs/, in the background (see scripts/shots.sh).
 shots: app

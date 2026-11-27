@@ -1,7 +1,7 @@
 import DeskCore
 import SwiftUI
 
-/// The foot of the left sidebar (EMI-408, placement 3): the Claude 5-hour and weekly limits as two small bars, when
+/// The foot of the left sidebar (EMI-408, placement 3): the Claude 5-hour and weekly limits as two one-line bars, when
 /// they reset, and what is running. It lives in the sidebar, so it goes when the sidebar is collapsed. Design:
 /// docs/design/prism-identity.html, "A status bar for Prism".
 struct SidebarFoot: View {
@@ -44,26 +44,20 @@ struct SidebarFoot: View {
     }
 }
 
-/// One limit as a row: label, a small bar that fills the width, the percentage, and below it when it resets; at the
-/// limit, "Limit reached" and when work can resume.
+/// One limit as one line: label, a small bar that fills the width and the percentage; under the pointer the percentage
+/// gives way to when the limit resets. At the limit, "Limit reached" and when work can resume.
 struct UsageMeter: View {
     var label: String
     var limit: UsageLimit
     var now: Date
     var dimmed: Bool
-    @Environment(WindowModel.self) private var model: WindowModel?
     @State private var hovering = false
 
     var body: some View {
-        if model?.lab.option("usage") == "one line" { oneLine } else { twoLines }
-    }
-
-    /// EMI-484 prototype: the bar and the percentage alone; the reset time shows in the percentage's place under the pointer.
-    private var oneLine: some View {
         let level = limit.level(now: now)
         let pct = limit.shownPercentage(now: now)
         let reset = limit.resetsAt.flatMap { $0 > now ? Self.when($0, now: now) : nil }
-        return HStack(spacing: Space.s) {
+        HStack(spacing: Space.s) {
             Text(label).foregroundStyle(.primary.opacity(0.75)).fontWeight(.medium)
                 .frame(width: Theme.usageLabelWidth, alignment: .leading)
             if level == .reached {
@@ -89,37 +83,6 @@ struct UsageMeter: View {
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .animation(Motion.fade, value: hovering)
-        .opacity(dimmed ? 0.55 : 1)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var twoLines: some View {
-        let level = limit.level(now: now)
-        let pct = limit.shownPercentage(now: now)
-        return VStack(alignment: .leading, spacing: Space.xxs) {
-            HStack(spacing: Space.s) {
-                Text(label).foregroundStyle(.primary.opacity(0.75)).fontWeight(.medium)
-                    .frame(width: Theme.usageLabelWidth, alignment: .leading)
-                if level == .reached {
-                    Text("Limit reached").fontWeight(.semibold).foregroundStyle(color(level))
-                    Spacer(minLength: 0)
-                } else {
-                    Capsule().fill(Theme.hairline)
-                        .frame(height: 4)
-                        .overlay(alignment: .leading) {
-                            GeometryReader { g in
-                                Capsule().fill(color(level)).frame(width: g.size.width * CGFloat(pct) / 100)
-                            }
-                        }
-                    Text("\(pct)%").monospacedDigit().fontWeight(.semibold)
-                        .foregroundStyle(level == .plenty ? AnyShapeStyle(.primary) : AnyShapeStyle(color(level)))
-                }
-            }
-            if let r = limit.resetsAt, r > now {
-                Text(level == .reached ? "back \(Self.when(r, now: now))" : "resets \(Self.when(r, now: now))")
-                    .padding(.leading, Theme.usageLabelWidth + Space.s)
-            }
-        }
         .opacity(dimmed ? 0.55 : 1)
         .accessibilityElement(children: .combine)
     }

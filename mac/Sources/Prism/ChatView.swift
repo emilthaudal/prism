@@ -256,7 +256,8 @@ struct ReportCard: View {
     private var card: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(spacing: Space.s) {
-                Dot(color: color)
+                // The sidebar's marks: a dot for finished, the diamond for a session that is stuck on Emil.
+                if ["blocked", "error"].contains(entry.outcome) { StatusDiamond(color: color) } else { Dot(color: color) }
                 Text(name).font(.callout.weight(.semibold))
                 Text(outcome).font(.callout).foregroundStyle(.secondary)
                 Spacer(minLength: Space.s)
