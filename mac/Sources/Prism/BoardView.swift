@@ -340,7 +340,7 @@ struct QuestionCard: View {
             if question.options.contains(where: { $0.attachment != nil }) {
                 OptionAttachments(question: question)
             }
-            if model?.feel == .morph, PourCardActions.fits(question, in: store), !selected || store.answers.pending(for: question.id) != nil {
+            if PourCardActions.fits(question, in: store) {
                 PourCardActions(store: store, question: question)
             } else if let pending = store.answers.pending(for: question.id) {
                 CountdownRow(store: store, pending: pending, named: false).transition(Motion.fadeTransition)

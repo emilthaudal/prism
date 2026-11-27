@@ -26,6 +26,8 @@ enum Motion {
     static let settle = Animation.smooth(duration: 0.3)
     /// A decision answered: its options making way for the countdown row, and back on Undo.
     static let answer = Animation.snappy(duration: 0.25)
+    /// Glass changing shape: a decision pouring out of the field, into its countdown pill and back. At rest by 300 ms.
+    static let pour = Animation.snappy(duration: 0.24)
     /// Opacity alone.
     static let fade = Animation.easeOut(duration: 0.15)
     /// "Needs you" showing up, once.
@@ -50,6 +52,8 @@ enum Motion {
 }
 
 enum Theme {
+    /// The least the answer field keeps beside a long "Send" label.
+    static let answerFieldMin: CGFloat = 140
     static let ringSize: CGFloat = 14
     static let ringWidth: CGFloat = 2
     static let composerThumbnail: CGFloat = 72

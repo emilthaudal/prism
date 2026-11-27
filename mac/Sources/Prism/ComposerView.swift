@@ -1,48 +1,63 @@
 import DeskCore
 import SwiftUI
 
-/// Under the desk's chat: the field that messages the desk, always, and above it the question that needs Emil as a card.
+/// Under the desk's chat: the field, and above it the decision that needs Emil, as two pieces of glass.
 struct ComposerView: View {
     var store: DeskStore
     var model: WindowModel
     @FocusState private var focus: ComposerField?
+    @Namespace private var glass
     @Environment(\.accessibilityReduceMotion) private var reduce
 
     var body: some View {
         let s = store.snapshot
         let open = Board(s).needsYou
         let active = model.activeQuestion(in: s)
-        let key = active.map { store.dialog(of: $0).count > 1 ? $0.dialog : $0.id }
-        let counting = active.map { store.answers.pending(for: $0.id) != nil || store.answers.batch(containing: $0.id) != nil } ?? false
-        VStack(spacing: Space.s) {
-            if model.feelPicker { FeelPicker(model: model) }
-            // The pour keeps one view across decisions, so its glass changes shape where the others swap.
-            let pours = model.feel == .morph && (active == nil || (store.dialog(of: active!).count == 1 && FeelComposer.fits(active!, in: store)) || store.answers.pending(for: active!.id) != nil)
-            if pours {
-                PourComposer(store: store, model: model, question: active, position: active.flatMap { q in open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) } }, waiting: active == nil ? open.count : 0, focus: $focus)
-            } else if let q = active {
-                let dialog = store.dialog(of: q)
-                Group {
+        let dialog = active.map { store.dialog(of: $0) } ?? []
+        // One decision pours; a track's dialog of several keeps its own answer fields and the message field under it.
+        let single = dialog.count == 1 ? active : nil
+        let pending = single.flatMap { store.answers.pending(for: $0.id) }
+        let batching = single.map { store.answers.batch(containing: $0.id) != nil } ?? false
+        let key = active.map { dialog.count > 1 ? $0.dialog : $0.id }
+        let shape = RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous)
+        // Two pieces of glass (EMI-479). The field stays; a decision is a second piece that pours out of it when one
+        // loads, draws in to a pill while its answer counts down, and runs back into the field when it is sent. The
+        // views keep their identity across decisions, so the glass changes shape where it used to be swapped. The
+        // container's spacing is under the gap between the pieces: they sit apart at rest and run together only while
+        // one changes shape.
+        GlassEffectContainer(spacing: Space.xs) {
+            VStack(alignment: .leading, spacing: Space.s) {
+                if let q = active {
+                    // Each state is its own glass under one id, which is what makes the system pour one into the
+                    // other. One glass view with changing content does not animate at all here (tried 27 Nov).
                     if dialog.count > 1 {
                         DecisionDialog(store: store, model: model, questions: dialog, keyed: store.nextUndecided(from: q).id, focus: $focus)
-                    } else if model.feel != .today, model.feel != .morph, FeelComposer.fits(q, in: store) {
-                        FeelComposer(store: store, model: model, question: q, position: open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) }, feel: model.feel, focus: $focus)
+                            .glassEffect(.regular, in: shape)
+                            .glassEffectID("decision", in: glass)
+                    } else if let pending {
+                        CountdownPill(store: store, pending: pending)
+                            .glassEffect(.regular.interactive(), in: Capsule())
+                            .glassEffectID("decision", in: glass)
                     } else {
                         QuestionComposer(store: store, model: model, question: q, position: open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) }, focus: $focus)
+                            .glassEffect(.regular, in: shape)
+                            .glassEffectID("decision", in: glass)
                     }
                 }
-                .id(key)
-                // An answer that went out leaves at once, with its ring; the next decision fades in as the height settles.
-                .transition(.asymmetric(insertion: .opacity.animation(Motion.fades(Motion.settle, reduce: reduce)), removal: counting ? .identity : .opacity.animation(Motion.fades(Motion.settle, reduce: reduce))))
-            }
-            // One field: a single decision carries its own answer field in its box, so the message field waits behind
-            // esc (the question stays open on the board). A track's dialog keeps both.
-            if !pours, active == nil || store.dialog(of: active!).count > 1 {
-                MessageComposer(store: store, model: model, waiting: active == nil ? open.count : 0, focus: $focus)
+                Group {
+                    if let q = single, !batching {
+                        AnswerRow(store: store, model: model, question: q, counting: pending != nil, focus: $focus)
+                    } else {
+                        MessageComposer(store: store, model: model, waiting: active == nil ? open.count : 0, focus: $focus)
+                    }
+                }
+                .glassEffect(.regular.interactive(), in: shape)
+                .glassEffectID("field", in: glass)
             }
         }
-        .animation(Motion.moves(model.feel.answerMotion, reduce: reduce), value: counting)
-        .animation(Motion.moves(Motion.settle, reduce: reduce), value: key)
+        .animation(Motion.moves(Motion.pour, reduce: reduce), value: pending?.deadline)
+        .animation(Motion.moves(Motion.pour, reduce: reduce), value: batching)
+        .animation(Motion.moves(Motion.pour, reduce: reduce), value: key)
         .padding(.horizontal, Space.m)
         .padding(.bottom, Space.l)
         // The messages' text sits Space.xxl in, so the composer's, Space.l inside its box at Space.m, starts where theirs does.
@@ -116,8 +131,6 @@ struct MessageComposer: View {
     var model: WindowModel
     var waiting: Int
     var focus: FocusState<ComposerField?>.Binding
-    /// Inside the pour, which draws the glass itself.
-    var bare = false
 
     var body: some View {
         @Bindable var model = model
@@ -154,7 +167,6 @@ struct MessageComposer: View {
         }
         .padding(Space.l)
         .focusOnTap(focus, .desk)
-        .modifier(ComposerCard(enabled: !bare))
     }
 
     private func send() {
@@ -211,7 +223,6 @@ struct DecisionDialog: View {
         }
         .padding(.horizontal, Space.s)
         .padding(.vertical, Space.m)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous))
     }
 
     private var list: some View {
@@ -298,9 +309,8 @@ struct QuestionComposer: View {
                 if question.options.isEmpty, let text = question.recommendationText {
                     RecommendationRow(text: text) { store.answerRecommended(question.id) }
                 }
-                if keyed, !embedded {
-                    answerRow(staging: staging, stagedChoice: stagedChoice)
-                } else if keyed {
+                // On its own the question's answer field is the composer's field piece (AnswerRow).
+                if keyed, embedded {
                     HStack(spacing: Space.s) {
                         TextField(question.options.isEmpty && question.recommendationText == nil ? "Answer in your own words\u{2026}" : "Or answer in your own words\u{2026}", text: $model.answerDraft, axis: .vertical)
                             .textFieldStyle(.plain)
@@ -325,54 +335,6 @@ struct QuestionComposer: View {
         .padding(.horizontal, embedded ? 0 : Space.s)
         .padding(.vertical, embedded ? 0 : Space.m)
         .environment(\.keysLive, focus.wrappedValue == nil)
-        .modifier(ComposerCard(enabled: !embedded))
-    }
-
-    /// What one send does: the typed answer, else the staged or recommended option, named so the button says what it sends.
-    private func sendLabel(stagedChoice: AnswerChoice?) -> String {
-        if !model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Send answer" }
-        if let c = stagedChoice { return "Send \u{201C}\(question.label(for: c))\u{201D}" }
-        if let i = question.recommendedIndex, question.options.indices.contains(i) { return "Send \u{201C}\(question.options[i].label)\u{201D}" }
-        if question.recommendationText != nil { return "Send recommendation" }
-        return "Send answer"
-    }
-
-    /// The bottom row of the one composer box: a chip saying which decision the field answers, the field, and an ink button.
-    private func answerRow(staging: Bool, stagedChoice: AnswerChoice?) -> some View {
-        @Bindable var model = model
-        let empty = model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let canSend = !empty || question.recommendedChoice != nil || stagedChoice != nil
-        return VStack(spacing: Space.s) {
-            Divider()
-            HStack(spacing: Space.s) {
-                Button { model.dismissQuestion() } label: {
-                    HStack(spacing: Space.xs) {
-                        Text("Answering \(question.id)").font(.prismMeta.weight(.semibold))
-                        Image(systemName: "xmark").font(.prismMeta.weight(.bold))
-                    }
-                    .foregroundStyle(Theme.question)
-                    .padding(.horizontal, Space.s)
-                    .frame(height: Theme.chipHeight)
-                }
-                .buttonStyle(RowButtonStyle(fill: Theme.question.opacity(0.14)))
-                .help("Back to messaging Prism (esc). The question stays open on the board.")
-                TextField(question.options.isEmpty && question.recommendationText == nil ? "Answer in your own words\u{2026}" : "or in your own words\u{2026}", text: $model.answerDraft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...4)
-                    .focused(focus, equals: .answer)
-                    .newlineOnShiftReturn(in: $model.answerDraft)
-                    .onSubmit(answerInWords)
-                Button(action: answerInWords) {
-                    Text(staging && !empty ? "Stage \u{21A9}" : sendLabel(stagedChoice: stagedChoice) + " \u{21A9}")
-                        .font(.callout.weight(.semibold))
-                        .lineLimit(1)
-                }
-                .buttonStyle(InkButtonStyle())
-                .disabled(!canSend)
-            }
-            .padding(.horizontal, Space.s)
-        }
-        .focusOnTap(focus, .answer)
     }
 
     private var askRow: some View {
@@ -471,16 +433,99 @@ struct StagedRow: View {
     }
 }
 
-/// The composer's glass card, which a question inside a DecisionDialog leaves to the dialog.
-struct ComposerCard: ViewModifier {
-    var enabled: Bool
+/// The field piece while one decision is loaded: a chip saying which decision the field answers, the field, and an ink
+/// button that says what it sends, or Undo while the answer counts down. Send stays ink and Undo plain: no glass on glass.
+struct AnswerRow: View {
+    var store: DeskStore
+    var model: WindowModel
+    var question: Question
+    var counting: Bool
+    var focus: FocusState<ComposerField?>.Binding
 
-    func body(content: Content) -> some View {
-        if enabled {
-            content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous))
-        } else {
-            content
+    var body: some View {
+        @Bindable var model = model
+        let staging = store.stagesAnswer(to: question)
+        let stagedChoice = store.stagedChoice(for: question.id)
+        let empty = model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let canSend = !empty || question.recommendedChoice != nil || stagedChoice != nil
+        HStack(spacing: Space.s) {
+            Button { model.dismissQuestion() } label: {
+                HStack(spacing: Space.xs) {
+                    Text("Answering \(question.id)").font(.prismMeta.weight(.semibold))
+                    Image(systemName: "xmark").font(.prismMeta.weight(.bold))
+                }
+                .foregroundStyle(Theme.question)
+                .padding(.horizontal, Space.s)
+                .frame(height: Theme.chipHeight)
+            }
+            .buttonStyle(RowButtonStyle(fill: Theme.question.opacity(0.14)))
+            .fixedSize()
+            .help("Back to messaging Prism (esc). The question stays open on the board.")
+            TextField(question.options.isEmpty && question.recommendationText == nil ? "Answer in your own words\u{2026}" : "or in your own words\u{2026}", text: $model.answerDraft, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineLimit(1...4)
+                .focused(focus, equals: .answer)
+                .newlineOnShiftReturn(in: $model.answerDraft)
+                .onSubmit(answerInWords)
+                .frame(minWidth: Theme.answerFieldMin)
+            if counting {
+                Button { store.undo(question.id) } label: {
+                    HStack(spacing: Space.s) { Text("Undo"); KeyHint(text: "z") }
+                }
+                .buttonStyle(.bordered)
+            } else {
+                Button(action: answerInWords) {
+                    // A long option name gives way; the return mark never does.
+                    HStack(spacing: Space.xs) {
+                        Text(staging && !empty ? "Stage" : sendLabel(stagedChoice: stagedChoice)).lineLimit(1).truncationMode(.tail)
+                        Text("\u{21A9}").fixedSize()
+                    }
+                    .font(.callout.weight(.semibold))
+                }
+                .buttonStyle(InkButtonStyle())
+                .disabled(!canSend)
+            }
         }
+        .padding(.horizontal, Space.l)
+        .padding(.vertical, Space.m)
+        .focusOnTap(focus, .answer)
+        .environment(\.keysLive, focus.wrappedValue == nil)
+    }
+
+    /// What one send does: the typed answer, else the staged or recommended option, named so the button says what it sends.
+    private func sendLabel(stagedChoice: AnswerChoice?) -> String {
+        if !model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Send answer" }
+        if let c = stagedChoice { return "Send \u{201C}\(question.label(for: c))\u{201D}" }
+        if let i = question.recommendedIndex, question.options.indices.contains(i) { return "Send \u{201C}\(question.options[i].label)\u{201D}" }
+        if question.recommendationText != nil { return "Send recommendation" }
+        return "Send answer"
+    }
+
+    private func answerInWords() {
+        let text = model.answerDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            store.answerRecommended(question.id)
+            return
+        }
+        model.answerDraft = ""
+        store.answer(question.id, choice: .text(text))
+    }
+}
+
+/// The decision piece while its answer counts down: the glass draws in to a pill that says what is being sent.
+struct CountdownPill: View {
+    var store: DeskStore
+    var pending: PendingAnswer
+
+    var body: some View {
+        HStack(spacing: Space.s) {
+            CountdownLine(deadline: pending.deadline, now: store.now) { "Sending \u{201C}\(pending.label)\u{201D} in \($0) s" }
+                .lineLimit(1)
+                .truncationMode(.middle)
+            if pending.againstRecommendation { Pill(text: "Not your recommendation", color: .orange).fixedSize() }
+        }
+        .padding(.horizontal, Space.l)
+        .padding(.vertical, Space.s)
     }
 }
 
@@ -619,7 +664,11 @@ struct OptionRow: View {
             .padding(.vertical, Space.s)
         }
         .buttonStyle(RowButtonStyle())
+        .targetID(Self.target(question.id, index))
     }
+
+    /// The row's name for a demo script's hover and press, and for the echo of a digit key.
+    static func target(_ question: String, _ index: Int) -> String { "option:\(question):\(index)" }
 }
 
 /// The ring that drains and the seconds left in an undo window: the ring runs down in one linear animation, the digit
