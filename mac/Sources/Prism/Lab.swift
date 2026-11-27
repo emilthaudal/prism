@@ -2,7 +2,7 @@ import DeskCore
 import SwiftUI
 
 /// EMI-477 prototypes, not shipped: options for one surface at a time, run in the real app on a fixture. Launch with
-/// --lab (or --lab reports=plain,cards=ranked) and step each choice with its Option key. Every choice's first option is
+/// --lab (or --lab marks=shapes) and step each choice with its Option key. Every choice's first option is
 /// the build as it is, and without --lab nothing here is reached.
 struct Lab: Equatable {
     struct Choice {
@@ -17,30 +17,13 @@ struct Lab: Equatable {
     }
 
     static let choices: [Choice] = [
-        Choice(number: 1, surface: "Conversation", key: "reports", title: "Reports", options: ["card", "plain", "glass"], notes: [
-            "Today: a painted card, 4 % fill and a hairline.",
-            "No box. A report is text on the paper like Prism's own, told apart by its dot and name; glass is left to what you act on.",
-            "Each report is a piece of glass. It scrolls under the composer's glass.",
-        ]),
         Choice(number: 5, surface: "Sidebar", key: "marks", title: "Status marks", options: ["dots", "shapes"], notes: [
             "Today: finished, idle, a question and blocked are dots of one shape, told apart by colour.",
             "Each state has its own shape, drawn like the dot: a ring once seen, a short bar for idle, the board's diamond for what needs you.",
         ]),
-        Choice(number: 8, surface: "Sidebar", key: "tree", title: "Session lines", options: ["elbows", "quiet", "rail"], notes: [
-            "Today: a trunk and an elbow into each session's mark, as heavy as the marks.",
-            "The same tree in a hairline at half strength, joined to the lane chip and stopping short of each mark.",
-            "No tree. The track's lane chip runs on as one bar beside its sessions; the indent says the rest.",
-        ]),
         Choice(number: 6, surface: "Sidebar", key: "usage", title: "Usage", options: ["two lines", "one line"], notes: [
             "Today: each limit is a bar with its reset time on a line below.",
             "Each limit is one line; the reset time takes the percentage's place under the pointer.",
-        ]),
-        Choice(number: 7, surface: "Board", key: "cards", title: "Board cards", options: ["mixed", "even", "ranked", "lined", "grouped"], notes: [
-            "Today: decisions and reports have a fill and a hairline, tracks and loops a fill alone.",
-            "One card for everything on the board: the fill and the hairline.",
-            "Only a decision is a card. Reports, tracks and loops are rows on the board's glass and shade under the pointer.",
-            "Ranked, with body: each section's rows sit close with a hairline between them, and a decision's card is lifted to a lighter fill.",
-            "Ranked, with body: each section's rows share one soft sheet with hairlines between them, and a decision's card is lifted to a lighter fill.",
         ]),
     ]
 
@@ -58,7 +41,7 @@ struct Lab: Equatable {
 
     init() {}
 
-    /// `reports=plain,cards=ranked`; a bare `on` keeps every choice at today's.
+    /// `marks=shapes`; a bare `on` keeps every choice at today's.
     init(_ spec: String) throws {
         for part in spec.split(separator: ",") where part != "on" {
             let pair = part.split(separator: "=", maxSplits: 1).map(String.init)
@@ -66,32 +49,6 @@ struct Lab: Equatable {
                 throw LaunchOptions.Invalid(description: "--lab takes \(Lab.choices.map { "\($0.key)=\($0.options.joined(separator: "|"))" }.joined(separator: ",")): \(part)")
             }
             picks[i] = o
-        }
-    }
-}
-
-/// EMI-480 prototype: a board section's rows. Under "lined" and "grouped" they sit close with hairlines between them, and
-/// "grouped" puts one soft sheet under the section; otherwise each is laid out on its own as before.
-struct BoardGroup<Content: View>: View {
-    @ViewBuilder var content: Content
-    @Environment(WindowModel.self) private var model: WindowModel?
-
-    var body: some View {
-        let look = model?.lab.option("cards") ?? "mixed"
-        if look == "lined" || look == "grouped" {
-            let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-            VStack(alignment: .leading, spacing: Space.none) {
-                Group(subviews: content) { rows in
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
-                        if i > 0 { Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, Theme.boardCardPadding) }
-                        row
-                    }
-                }
-            }
-            .background(look == "grouped" ? Theme.cardFill : .clear, in: shape)
-            .clipShape(shape)
-        } else {
-            VStack(alignment: .leading, spacing: Space.m) { content }
         }
     }
 }
@@ -104,7 +61,7 @@ struct LabPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             // One row per surface, so every choice shows whole.
-            ForEach(["Conversation", "Sidebar", "Board"], id: \.self) { surface in
+            ForEach(["Sidebar"], id: \.self) { surface in
                 HStack(spacing: Space.xs) {
                     Text(surface).font(.prismMeta).foregroundStyle(.tertiary).frame(width: Space.xxl * 3, alignment: .leading).padding(.leading, Space.s)
                     ForEach(Array(Lab.choices.enumerated()).filter { $0.element.surface == surface }, id: \.offset) { i, choice in

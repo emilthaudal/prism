@@ -62,8 +62,8 @@ run: app
 demo: app
 	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))"
 
-# EMI-477 prototypes: the fixture with the option picker over the conversation (⌥1 to ⌥7). LAB=reports=plain,cards=ranked
-# opens on those picks; FIXTURE=../mock/serve-fixture-quiet.json shows the quiet board.
+# EMI-477 prototypes: the fixture with the option picker over the conversation (⌥5 status marks, ⌥6 usage).
+# LAB=marks=shapes opens on that pick; FIXTURE=../mock/serve-fixture-quiet.json shows the quiet board.
 lab: app
 	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))" --lab "$(or $(LAB),on)"
 

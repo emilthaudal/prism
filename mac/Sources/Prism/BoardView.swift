@@ -192,6 +192,26 @@ struct BoardView: View {
     }
 }
 
+/// A board section's rows as one soft sheet, with a hairline between them: five tracks read as one object, and a
+/// milestone card that folds out grows inside it (EMI-480).
+struct BoardGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+        VStack(alignment: .leading, spacing: Space.none) {
+            Group(subviews: content) { rows in
+                ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                    if i > 0 { Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, Theme.boardCardPadding) }
+                    row
+                }
+            }
+        }
+        .background(Theme.cardFill, in: shape)
+        .clipShape(shape)
+    }
+}
+
 struct SectionHeading: View {
     var title: String
     var count: String

@@ -79,6 +79,8 @@ enum Theme {
     static let removed = Color(nsColor: .systemRed)
     static let hairline = Color.primary.opacity(0.09)
     static let cardFill = Color.primary.opacity(0.04)
+    /// What a decision's card sits on: lighter than the board, where every other row shares its section's sheet.
+    static func lifted(_ scheme: ColorScheme) -> Color { Color.white.opacity(scheme == .dark ? 0.08 : 0.5) }
 
     /// Text inside a card or bubble sits at least its corner radius from the edge.
     static let cardRadius = Space.m
@@ -113,10 +115,9 @@ enum Theme {
     /// The lane mark beside a track row's two lines.
     static let laneChipTall: CGFloat = 28
     static let laneRail: CGFloat = 2
-    static let treeRadius: CGFloat = 6
     /// How far a row's tree lines reach past its top and bottom: across the gap between sidebar rows.
     static let treeBleed = Space.m
-    /// EMI-484 prototype: how far above a session's row its line starts, to meet the track's lane chip.
+    /// How far above a session's row its piece of the lane bar starts, to meet the track's lane chip.
     static let treeReach = Space.xxl
     /// The frosted glass over the wall in the side columns (the mockup's --w-glass): the wall's colour shows through.
     /// Enough to melt the gradient's pinwheel centre into a wash, as the mockup's glass does.
@@ -291,24 +292,14 @@ struct TreePlace {
     var hasChildren = false
 }
 
-/// The tree lines in the lane colour from a track down to its sessions and subagents (direction B, the mockup's
-/// `.row.child`): a trunk under the parent's mark and a rounded elbow into each child's mark. Each row draws its piece
-/// past its own top and bottom, across the gap between list rows, so the pieces join into one line (EMI-411).
+/// A track's lane beside its sessions and their subagents: the lane chip runs on as one bar, and the indent says which
+/// row is whose (EMI-484; a tree of elbows into each mark was tried and read as heavy and untidy). Each row draws its
+/// piece past its own top and bottom, across the gap between list rows, so the pieces join into one bar.
 struct TreeLines: ViewModifier {
     var color: Color?
     var place: TreePlace
-    @Environment(WindowModel.self) private var model: WindowModel?
 
     func body(content: Content) -> some View {
-        switch model?.lab.option("tree") {
-        case "rail": rail(content)
-        case "quiet": quiet(content)
-        default: elbows(content)
-        }
-    }
-
-    /// EMI-484 prototype: no tree. The lane chip runs on as one bar beside the track's sessions and their subagents.
-    private func rail(_ content: Content) -> some View {
         content.overlay(alignment: .leading) {
             if let color {
                 GeometryReader { geo in
@@ -320,84 +311,6 @@ struct TreeLines: ViewModifier {
                         p.addLine(to: CGPoint(x: Space.l / 2, y: ends ? h - Theme.laneChip.width / 2 : h + Theme.treeBleed))
                     }
                     .stroke(color, style: StrokeStyle(lineWidth: Theme.laneChip.width, lineCap: .round))
-                }
-                .allowsHitTesting(false)
-            }
-        }
-    }
-
-    /// EMI-484 prototype: the tree as a hairline at half strength, joined to the lane chip and stopping short of each mark.
-    private func quiet(_ content: Content) -> some View {
-        content.overlay(alignment: .leading) {
-            if let color {
-                GeometryReader { geo in
-                    let h = geo.size.height
-                    let bleed = Theme.treeBleed
-                    let x = Theme.childIndent * CGFloat(place.depth - 1) + Space.l / 2
-                    let mid = min(h / 2, Space.m)
-                    // Short of the child's mark by Space.xs.
-                    let end = Theme.childIndent * CGFloat(place.depth) + Space.l / 2 - Theme.spinnerSize / 2 - Space.xs
-                    Path { p in
-                        p.move(to: CGPoint(x: x, y: place.depth == 1 ? -Theme.treeReach : -bleed))
-                        p.addLine(to: CGPoint(x: x, y: mid - Theme.treeRadius))
-                        p.addQuadCurve(to: CGPoint(x: x + Theme.treeRadius, y: mid), control: CGPoint(x: x, y: mid))
-                        p.addLine(to: CGPoint(x: end, y: mid))
-                        if !place.last {
-                            p.move(to: CGPoint(x: x, y: mid - Theme.treeRadius))
-                            p.addLine(to: CGPoint(x: x, y: h + bleed))
-                        }
-                        if place.depth == 2, place.trunkContinues {
-                            p.move(to: CGPoint(x: Space.l / 2, y: -bleed))
-                            p.addLine(to: CGPoint(x: Space.l / 2, y: h + bleed))
-                        }
-                        if place.depth == 1, place.hasChildren {
-                            let own = Theme.childIndent + Space.l / 2
-                            p.move(to: CGPoint(x: own, y: mid + Theme.spinnerSize / 2 + Space.xs))
-                            p.addLine(to: CGPoint(x: own, y: h + bleed))
-                        }
-                    }
-                    .stroke(color.opacity(0.5), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
-                }
-                .allowsHitTesting(false)
-            }
-        }
-    }
-
-    private func elbows(_ content: Content) -> some View {
-        content.overlay(alignment: .leading) {
-            if let color {
-                GeometryReader { geo in
-                    let h = geo.size.height
-                    let bleed = Theme.treeBleed
-                    // The parent's mark is centred in a Space.l frame at the parent's indent.
-                    let x = Theme.childIndent * CGFloat(place.depth - 1) + Space.l / 2
-                    let mid = min(h / 2, Space.m)
-                    ZStack(alignment: .topLeading) {
-                        Path { p in
-                            p.move(to: CGPoint(x: x, y: -bleed))
-                            p.addLine(to: CGPoint(x: x, y: mid - Theme.treeRadius))
-                            p.addQuadCurve(to: CGPoint(x: x + Theme.treeRadius, y: mid), control: CGPoint(x: x, y: mid))
-                            p.addLine(to: CGPoint(x: Theme.childIndent * CGFloat(place.depth) + Space.xxs, y: mid))
-                        }
-                        .stroke(color, style: StrokeStyle(lineWidth: Theme.laneRail, lineCap: .round, lineJoin: .round))
-                        Path { p in
-                            if !place.last {
-                                p.move(to: CGPoint(x: x, y: mid))
-                                p.addLine(to: CGPoint(x: x, y: h + bleed))
-                            }
-                            if place.depth == 2, place.trunkContinues {
-                                p.move(to: CGPoint(x: Space.l / 2, y: -bleed))
-                                p.addLine(to: CGPoint(x: Space.l / 2, y: h + bleed))
-                            }
-                            if place.depth == 1, place.hasChildren {
-                                // From under the session's own mark down to its first subagent's elbow.
-                                let own = Theme.childIndent + Space.l / 2
-                                p.move(to: CGPoint(x: own, y: mid + Theme.spinnerSize / 2 + Space.xxs))
-                                p.addLine(to: CGPoint(x: own, y: h + bleed))
-                            }
-                        }
-                        .stroke(color, style: StrokeStyle(lineWidth: Theme.laneRail, lineCap: .butt))
-                    }
                 }
                 .allowsHitTesting(false)
             }
@@ -601,9 +514,10 @@ struct RowButtonStyle: ButtonStyle {
     var radius = Space.s
     /// A card: its hairline darkens to 0.16 while the pointer is on it.
     var card = false
-    /// EMI-480 prototype: a board card that informs (a report, a track, a loop), which the lab's "cards" choice redraws.
+    /// A board row that informs (a report, a track, a loop): no fill or hairline of its own, since its section's sheet
+    /// holds it (BoardGroup); it still shades under the pointer.
     var informs = false
-    /// EMI-480 prototype: a decision's card, lifted to a lighter fill where the rows around it have no card.
+    /// A decision's card: lifted to a lighter fill that nothing else on the board has (EMI-480).
     var decides = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -625,13 +539,9 @@ struct RowButtonStyle: ButtonStyle {
             let pressed = configuration.isPressed || (targetID != nil && model?.pressedTarget == targetID)
             let shade = pressed ? 0.09 : (hovering && enabled ? 0.05 : 0)
             let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
-            let cards = model?.lab.option("cards") ?? "mixed"
-            let look = style.informs ? cards : "mixed"
-            let rows = ["ranked", "lined", "grouped"].contains(look)
-            let outlined = look == "even" || (style.card && !rows)
-            let lifted = style.decides && (cards == "lined" || cards == "grouped")
+            let outlined = style.card && !style.informs
             configuration.label
-                .background(shape.fill(rows ? Color.clear : (lifted ? Color.white.opacity(scheme == .dark ? 0.08 : 0.5) : style.fill)))
+                .background(shape.fill(style.informs ? Color.clear : (style.decides ? Theme.lifted(scheme) : style.fill)))
                 .background(shape.fill(Color.primary.opacity(shade)))
                 .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
