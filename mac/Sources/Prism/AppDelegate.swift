@@ -89,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.overnightSeed = OvernightLoop(goal: "Get p95 of /search under 120 ms on the bench set. Measure with make bench.", folder: "~/code/pantry-api", until: .sevenOClock)
             model.overnightShown = true
         }
+        if let feel = options.feel, fixture != nil {
+            model.feel = feel
+            model.feelPicker = true
+        }
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
@@ -222,6 +226,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         // ⇧⌘L is the menu's Run Overnight, not ⌘L.
         if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
+        if model.feelPicker, flags == .option, let n = Int(key.characters), Feel.allCases.indices.contains(n - 1) {
+            model.feel = Feel.allCases[n - 1]
+            return true
+        }
         let editing = window?.firstResponder is NSTextView
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.
@@ -238,6 +246,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store.answerRecommended(q.id)
         case .pick(let n):
             guard let q = model.keyedQuestion(store), q.options.indices.contains(n), store.answers.batch(containing: q.id) == nil else { return false }
+            if model.feel != .today { model.flash(FeelComposer.target(q.id, n)) }
             store.answer(q.id, choice: .option(n))
         case .undo:
             return store.undo()

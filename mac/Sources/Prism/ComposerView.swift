@@ -15,11 +15,18 @@ struct ComposerView: View {
         let key = active.map { store.dialog(of: $0).count > 1 ? $0.dialog : $0.id }
         let counting = active.map { store.answers.pending(for: $0.id) != nil || store.answers.batch(containing: $0.id) != nil } ?? false
         VStack(spacing: Space.s) {
-            if let q = active {
+            if model.feelPicker { FeelPicker(model: model) }
+            // The pour keeps one view across decisions, so its glass changes shape where the others swap.
+            let pours = model.feel == .morph && (active == nil || (store.dialog(of: active!).count == 1 && FeelComposer.fits(active!, in: store)) || store.answers.pending(for: active!.id) != nil)
+            if pours {
+                PourComposer(store: store, model: model, question: active, position: active.flatMap { q in open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) } }, waiting: active == nil ? open.count : 0, focus: $focus)
+            } else if let q = active {
                 let dialog = store.dialog(of: q)
                 Group {
                     if dialog.count > 1 {
                         DecisionDialog(store: store, model: model, questions: dialog, keyed: store.nextUndecided(from: q).id, focus: $focus)
+                    } else if model.feel != .today, model.feel != .morph, FeelComposer.fits(q, in: store) {
+                        FeelComposer(store: store, model: model, question: q, position: open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) }, feel: model.feel, focus: $focus)
                     } else {
                         QuestionComposer(store: store, model: model, question: q, position: open.firstIndex { $0.id == q.id }.map { ($0 + 1, open.count) }, focus: $focus)
                     }
@@ -30,11 +37,11 @@ struct ComposerView: View {
             }
             // One field: a single decision carries its own answer field in its box, so the message field waits behind
             // esc (the question stays open on the board). A track's dialog keeps both.
-            if active == nil || store.dialog(of: active!).count > 1 {
+            if !pours, active == nil || store.dialog(of: active!).count > 1 {
                 MessageComposer(store: store, model: model, waiting: active == nil ? open.count : 0, focus: $focus)
             }
         }
-        .animation(Motion.moves(Motion.answer, reduce: reduce), value: counting)
+        .animation(Motion.moves(model.feel.answerMotion, reduce: reduce), value: counting)
         .animation(Motion.moves(Motion.settle, reduce: reduce), value: key)
         .padding(.horizontal, Space.m)
         .padding(.bottom, Space.l)
@@ -109,6 +116,8 @@ struct MessageComposer: View {
     var model: WindowModel
     var waiting: Int
     var focus: FocusState<ComposerField?>.Binding
+    /// Inside the pour, which draws the glass itself.
+    var bare = false
 
     var body: some View {
         @Bindable var model = model
@@ -145,7 +154,7 @@ struct MessageComposer: View {
         }
         .padding(Space.l)
         .focusOnTap(focus, .desk)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous))
+        .modifier(ComposerCard(enabled: !bare))
     }
 
     private func send() {

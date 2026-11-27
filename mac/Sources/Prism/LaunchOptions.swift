@@ -18,6 +18,8 @@ struct LaunchOptions {
     var demoStage = false
     /// Fixture captures only: picks option N (from 1) of the selected question, as a click on it would.
     var demoPick: Int?
+    /// Fixture only, EMI-477 prototype: opens on this feel of answering and shows the picker (⌥1–⌥4).
+    var feel: Feel?
     /// Fixture captures only: a window with the sidebar alone, off the glass, so --snapshot draws its rows.
     var sidebarOnly = false
     /// Fixture only: opens the "Run overnight" sheet filled with made-up values.
@@ -49,6 +51,10 @@ struct LaunchOptions {
                 guard let n = Int(v), n >= 1 else { throw Invalid(description: "--demo-pick needs an option number from 1: \(v)") }
                 demoPick = n
             case "--sidebar-only": sidebarOnly = true
+            case "--feel":
+                let v = try Self.value(arg, &it)
+                guard let f = Feel(rawValue: v) else { throw Invalid(description: "--feel is one of \(Feel.allCases.map(\.rawValue).joined(separator: ", ")): \(v)") }
+                feel = f
             case "--demo-overnight": demoOvernight = true
             case "--demo-script": demoScript = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--motion-dir": motionDir = URL(fileURLWithPath: try Self.value(arg, &it))
