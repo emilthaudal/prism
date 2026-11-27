@@ -483,7 +483,7 @@ struct DoneReport: View {
 
     var body: some View {
         Button(action: open) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true, informs: true))
     }
 
     private var card: some View {

@@ -32,7 +32,7 @@ struct LoopCard: View {
 
     var body: some View {
         Button(action: open) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, informs: true))
     }
 
     private var card: some View {

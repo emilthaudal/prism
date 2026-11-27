@@ -528,6 +528,8 @@ struct RowButtonStyle: ButtonStyle {
     var radius = Space.s
     /// A card: its hairline darkens to 0.16 while the pointer is on it.
     var card = false
+    /// EMI-480 prototype: a board card that informs (a report, a track, a loop), which the lab's "cards" choice redraws.
+    var informs = false
 
     func makeBody(configuration: Configuration) -> some View {
         Target(configuration: configuration, style: self)
@@ -547,10 +549,12 @@ struct RowButtonStyle: ButtonStyle {
             let pressed = configuration.isPressed || (targetID != nil && model?.pressedTarget == targetID)
             let shade = pressed ? 0.09 : (hovering && enabled ? 0.05 : 0)
             let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
+            let look = style.informs ? (model?.lab.option("cards") ?? "mixed") : "mixed"
+            let outlined = look == "even" || (style.card && look != "ranked")
             configuration.label
-                .background(shape.fill(style.fill))
+                .background(shape.fill(look == "ranked" ? Color.clear : style.fill))
                 .background(shape.fill(Color.primary.opacity(shade)))
-                .overlay { if style.card { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
+                .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
                 .opacity(enabled ? 1 : 0.4)
                 .onHover { pointerOver = $0 }

@@ -47,7 +47,7 @@ struct MilestoneCard: View {
 
     var body: some View {
         Button(action: toggle) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, informs: true))
     }
 
     private var card: some View {

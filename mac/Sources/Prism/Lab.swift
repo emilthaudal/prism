@@ -31,6 +31,11 @@ struct Lab: Equatable {
             "Today: the conversation is cut straight under the title.",
             "The conversation thins out under the title over one line's height.",
         ]),
+        Choice(key: "cards", title: "Board cards", options: ["mixed", "even", "ranked"], notes: [
+            "Today: decisions and reports have a fill and a hairline, tracks and loops a fill alone.",
+            "One card for everything on the board: the fill and the hairline.",
+            "Only a decision is a card. Reports, tracks and loops are rows on the board's glass and shade under the pointer.",
+        ]),
     ]
 
     var picks = Array(repeating: 0, count: Lab.choices.count)
