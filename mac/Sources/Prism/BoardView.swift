@@ -128,10 +128,15 @@ struct BoardView: View {
                                 .font(.prismMeta.weight(.semibold))
                                 .foregroundStyle(.secondary)
                                 .rotationEffect(.degrees(isOpen ? 90 : 0))
-                            SectionHeading("Handled today", count: Self.handledToday(s.handled, now: now))
+                            SectionHeading("Handled today", count: Self.handledToday(s.handled, now: now), bare: true)
                         }
+                        // The shade is the label's own box: even padding inside it, and the chevron on the text edge.
+                        .padding(.horizontal, Space.s)
+                        .padding(.vertical, Space.xs)
                     }
                     .buttonStyle(RowButtonStyle())
+                    .padding(.horizontal, Space.m - Space.s)
+                    .padding(.top, Space.m - Space.xs)
                     if isOpen {
                         let newest = Array(s.handled.reversed())
                         let shown = handledAll ? newest : Array(newest.prefix(quiet ? Self.quietShown : Self.handledShown))
@@ -195,9 +200,13 @@ struct SectionHeading: View {
     var title: String
     var count: String
 
-    init(_ title: String, count: Int) {
+    /// Inside a button that pads its own label: no padding here, so a hover shade fits the text.
+    var bare = false
+
+    init(_ title: String, count: Int, bare: Bool = false) {
         self.title = title
         self.count = "\(count)"
+        self.bare = bare
     }
 
     init(_ title: String, detail: String) {
@@ -210,8 +219,8 @@ struct SectionHeading: View {
             Text(title).font(.callout.weight(.semibold)).foregroundStyle(.secondary)
             Text(count).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
         }
-        .padding(.top, Space.m)
-        .boardText()
+        .padding(.top, bare ? 0 : Space.m)
+        .padding(.horizontal, bare ? 0 : Space.m)
     }
 }
 
@@ -294,6 +303,7 @@ struct QuestionCard: View {
     var session: Session?
     var selected: Bool
     @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(WindowModel.self) private var model: WindowModel?
     var now: Date
     var pick: () -> Void
 
@@ -343,7 +353,9 @@ struct QuestionCard: View {
             if question.options.contains(where: { $0.attachment != nil }) {
                 OptionAttachments(question: question)
             }
-            if let pending = store.answers.pending(for: question.id) {
+            if model?.feel == .morph, PourCardActions.fits(question, in: store), !selected || store.answers.pending(for: question.id) != nil {
+                PourCardActions(store: store, question: question)
+            } else if let pending = store.answers.pending(for: question.id) {
                 CountdownRow(store: store, pending: pending, named: false).transition(Motion.fadeTransition)
             } else if let batch = store.answers.batch(containing: question.id) {
                 BatchCountdownRow(store: store, batch: batch).transition(Motion.fadeTransition)

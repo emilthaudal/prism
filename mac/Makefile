@@ -10,7 +10,7 @@ MOTION_OUT ?= build/motion
 UI_SCRIPT ?= scripts/ui-sample.json
 UI_OUT ?= build/ui
 
-.PHONY: build test app icon install run demo shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
+.PHONY: build test app icon install run demo feel shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
 
 build:
 	swift build
@@ -61,6 +61,10 @@ run: app
 # Runs the app on the fixture, actions applied in memory; no tracks serve needed.
 demo: app
 	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))"
+
+# EMI-477 prototype: the fixture with the picker for how answering a decision feels (⌥1–⌥5). FEEL=precise|fluid|glass|morph.
+feel: app
+	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))" --feel $(or $(FEEL),precise)
 
 # Captures the window from the fixture in light and dark into docs/, in the background (see scripts/shots.sh).
 shots: app

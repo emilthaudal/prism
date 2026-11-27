@@ -167,17 +167,31 @@ enum Theme {
     /// A decision's title: inline Markdown with code spans at label size in mono, their hyphens non-breaking so a
     /// branch or flag never wraps mid-word.
     static func questionMarkdown(_ s: String) -> AttributedString {
+        if let hit = parsed["q" + s] { return hit }
         let bound = s.replacing(/`[^`]+`/) { $0.output.replacingOccurrences(of: "-", with: "\u{2011}") }
         var out = markdown(bound)
         for run in out.runs where run.inlinePresentationIntent?.contains(.code) == true {
             out[run.range].font = .prismCode
         }
+        remember("q" + s, out)
         return out
+    }
+
+    /// Parsed Markdown by its source. A view's body can run on every frame of a transition (a glass morph does), and
+    /// parsing a question and its options each time dropped frames. Views read it on the main actor only.
+    nonisolated(unsafe) private static var parsed: [String: AttributedString] = [:]
+
+    private static func remember(_ key: String, _ value: AttributedString) {
+        if parsed.count > 2000 { parsed.removeAll(keepingCapacity: true) }
+        parsed[key] = value
     }
 
     /// Inline Markdown (code spans, bold, links); plain text when it doesn't parse.
     static func markdown(_ s: String) -> AttributedString {
-        (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(s)
+        if let hit = parsed["m" + s] { return hit }
+        let out = (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(s)
+        remember("m" + s, out)
+        return out
     }
 }
 
