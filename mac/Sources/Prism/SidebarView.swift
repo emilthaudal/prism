@@ -126,14 +126,24 @@ struct TrackRow: View {
     var expanded: Bool
     var now: Date
     var toggle: () -> Void
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
         let chip = row.chip(expanded: expanded)
+        let tree = model?.lab.option("tree") ?? "elbows"
         let lane = Theme.lane(Lane.of(row.id))
         // A track whose one session has stopped, and that waits on nobody, reads quieter than one at work.
         let quiet = row.nested.isEmpty && [.stopped, .idle].contains(row.primary?.state) && row.track.waitingOnPerson == nil
         HStack(spacing: Space.s) {
             LaneChip(color: lane, height: row.line == nil ? Theme.laneChip.height : Theme.laneChipTall)
+                // EMI-484 prototype: the chip runs on down to its sessions' line, which a row can't reach up to.
+                .overlay(alignment: .top) {
+                    if expanded, !row.nested.isEmpty, tree != "elbows" {
+                        Rectangle().fill(lane.opacity(tree == "rail" ? 1 : 0.5))
+                            .frame(width: tree == "rail" ? Theme.laneChip.width : 1, height: Theme.treeReach)
+                            .offset(y: Theme.laneChip.height / 2)
+                    }
+                }
                 .frame(width: Space.l)
             // The name always shows; the second line says what the track does, waits on or last said (Compact).
             VStack(alignment: .leading, spacing: Space.xxs) {
@@ -248,10 +258,9 @@ struct ChipIcon: View {
         ZStack {
             switch chip {
             case .working: Spinner(color: lane).transition(Motion.fadeTransition)
-            case .doneUnseen where shapes: mark("checkmark", Theme.done).transition(Motion.fadeTransition)
-            case .idle where shapes: mark("pause.fill", Theme.queued).transition(Motion.fadeTransition)
-            case .question where shapes: mark("diamond.fill", Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
-            case .permission where shapes, .error where shapes: mark("diamond.fill", Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
+            case .idle where shapes: StatusDash(color: Theme.queued).transition(Motion.fadeTransition)
+            case .question where shapes: StatusDiamond(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
+            case .permission where shapes, .error where shapes: StatusDiamond(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
             case .doneUnseen: Dot(color: Theme.done).transition(Motion.fadeTransition)
             case .done: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
             case .idle: Dot(color: Theme.queued).transition(Motion.fadeTransition)
@@ -265,10 +274,25 @@ struct ChipIcon: View {
     }
 }
 
-extension ChipIcon {
-    /// EMI-484 prototype: a state's own shape, at the dot's weight.
-    fileprivate func mark(_ symbol: String, _ color: Color) -> some View {
-        Image(systemName: symbol).font(.caption2.weight(.bold)).foregroundStyle(color).frame(width: Theme.spinnerSize, height: Theme.spinnerSize)
+/// EMI-484 prototype: idle as a short bar at the weight of the lane lines, drawn like the dot and the ring, not a glyph.
+struct StatusDash: View {
+    var color: Color
+
+    var body: some View {
+        Capsule().fill(color).frame(width: Theme.dotSize, height: Theme.laneRail)
+            .frame(width: Theme.dotSize, height: Theme.dotSize)
+    }
+}
+
+/// EMI-484 prototype: what needs you as the board's diamond, at the dot's weight.
+struct StatusDiamond: View {
+    var color: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1, style: .continuous).fill(color)
+            .frame(width: Theme.dotSize - 1, height: Theme.dotSize - 1)
+            .rotationEffect(.degrees(45))
+            .frame(width: Theme.dotSize, height: Theme.dotSize)
     }
 }
 

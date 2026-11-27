@@ -16,9 +16,11 @@ struct MilestoneSection: View {
         let briefs = BoardPlan.openBriefs(store.snapshot)
         if !briefs.isEmpty {
             SectionHeading("Tracks", count: briefs.count)
-            ForEach(briefs) { brief in
-                MilestoneCard(brief: brief, open: opened.contains(brief.id), now: now) { toggle(brief.id) }
-                    .targetID("milestones:\(brief.id)")
+            BoardGroup {
+                ForEach(briefs) { brief in
+                    MilestoneCard(brief: brief, open: opened.contains(brief.id), now: now) { toggle(brief.id) }
+                        .targetID("milestones:\(brief.id)")
+                }
             }
             // A demo script folds a card with `milestones:ID`.
             .onChange(of: model.foldRequest) { _, request in

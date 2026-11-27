@@ -116,6 +116,8 @@ enum Theme {
     static let treeRadius: CGFloat = 6
     /// How far a row's tree lines reach past its top and bottom: across the gap between sidebar rows.
     static let treeBleed = Space.m
+    /// EMI-484 prototype: how far above a session's row its line starts, to meet the track's lane chip.
+    static let treeReach = Space.xxl
     /// The frosted glass over the wall in the side columns (the mockup's --w-glass): the wall's colour shows through.
     /// Enough to melt the gradient's pinwheel centre into a wash, as the mockup's glass does.
     static let wallBlur: CGFloat = 64
@@ -235,7 +237,13 @@ extension Font {
 extension View {
     /// The window's title bar is transparent, so a scrolling message would print through the title; the scroll view
     /// shows only what is below the title.
-    func scrollsBelowTitle() -> some View { modifier(TitleEdge()) }
+    func scrollsBelowTitle() -> some View {
+        // Thinned out over one line, so no line of text is cut in half under the title (EMI-483).
+        mask(VStack(spacing: Space.none) {
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: Space.xxl)
+            Rectangle()
+        })
+    }
 
     /// Plain text in the conversation column: shapes sit Space.m in, text Space.xxl, so text is Space.l inside the shapes' edge.
     func conversationText() -> some View { padding(.horizontal, Space.l) }
@@ -289,8 +297,73 @@ struct TreePlace {
 struct TreeLines: ViewModifier {
     var color: Color?
     var place: TreePlace
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     func body(content: Content) -> some View {
+        switch model?.lab.option("tree") {
+        case "rail": rail(content)
+        case "quiet": quiet(content)
+        default: elbows(content)
+        }
+    }
+
+    /// EMI-484 prototype: no tree. The lane chip runs on as one bar beside the track's sessions and their subagents.
+    private func rail(_ content: Content) -> some View {
+        content.overlay(alignment: .leading) {
+            if let color {
+                GeometryReader { geo in
+                    let h = geo.size.height
+                    // The bar ends with the track's last row: its last session, or that session's last subagent.
+                    let ends = place.depth == 1 ? (place.last && !place.hasChildren) : (place.last && !place.trunkContinues)
+                    Path { p in
+                        p.move(to: CGPoint(x: Space.l / 2, y: -Theme.treeReach))
+                        p.addLine(to: CGPoint(x: Space.l / 2, y: ends ? h - Theme.laneChip.width / 2 : h + Theme.treeBleed))
+                    }
+                    .stroke(color, style: StrokeStyle(lineWidth: Theme.laneChip.width, lineCap: .round))
+                }
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// EMI-484 prototype: the tree as a hairline at half strength, joined to the lane chip and stopping short of each mark.
+    private func quiet(_ content: Content) -> some View {
+        content.overlay(alignment: .leading) {
+            if let color {
+                GeometryReader { geo in
+                    let h = geo.size.height
+                    let bleed = Theme.treeBleed
+                    let x = Theme.childIndent * CGFloat(place.depth - 1) + Space.l / 2
+                    let mid = min(h / 2, Space.m)
+                    // Short of the child's mark by Space.xs.
+                    let end = Theme.childIndent * CGFloat(place.depth) + Space.l / 2 - Theme.spinnerSize / 2 - Space.xs
+                    Path { p in
+                        p.move(to: CGPoint(x: x, y: place.depth == 1 ? -Theme.treeReach : -bleed))
+                        p.addLine(to: CGPoint(x: x, y: mid - Theme.treeRadius))
+                        p.addQuadCurve(to: CGPoint(x: x + Theme.treeRadius, y: mid), control: CGPoint(x: x, y: mid))
+                        p.addLine(to: CGPoint(x: end, y: mid))
+                        if !place.last {
+                            p.move(to: CGPoint(x: x, y: mid - Theme.treeRadius))
+                            p.addLine(to: CGPoint(x: x, y: h + bleed))
+                        }
+                        if place.depth == 2, place.trunkContinues {
+                            p.move(to: CGPoint(x: Space.l / 2, y: -bleed))
+                            p.addLine(to: CGPoint(x: Space.l / 2, y: h + bleed))
+                        }
+                        if place.depth == 1, place.hasChildren {
+                            let own = Theme.childIndent + Space.l / 2
+                            p.move(to: CGPoint(x: own, y: mid + Theme.spinnerSize / 2 + Space.xs))
+                            p.addLine(to: CGPoint(x: own, y: h + bleed))
+                        }
+                    }
+                    .stroke(color.opacity(0.5), style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
+                }
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private func elbows(_ content: Content) -> some View {
         content.overlay(alignment: .leading) {
             if let color {
                 GeometryReader { geo in
@@ -530,6 +603,8 @@ struct RowButtonStyle: ButtonStyle {
     var card = false
     /// EMI-480 prototype: a board card that informs (a report, a track, a loop), which the lab's "cards" choice redraws.
     var informs = false
+    /// EMI-480 prototype: a decision's card, lifted to a lighter fill where the rows around it have no card.
+    var decides = false
 
     func makeBody(configuration: Configuration) -> some View {
         Target(configuration: configuration, style: self)
@@ -542,6 +617,7 @@ struct RowButtonStyle: ButtonStyle {
         @Environment(\.targetID) private var targetID
         @Environment(WindowModel.self) private var model: WindowModel?
         @State private var pointerOver = false
+        @Environment(\.colorScheme) private var scheme
 
         var body: some View {
             let scripted = targetID != nil && model?.hoveredTarget == targetID
@@ -549,10 +625,13 @@ struct RowButtonStyle: ButtonStyle {
             let pressed = configuration.isPressed || (targetID != nil && model?.pressedTarget == targetID)
             let shade = pressed ? 0.09 : (hovering && enabled ? 0.05 : 0)
             let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
-            let look = style.informs ? (model?.lab.option("cards") ?? "mixed") : "mixed"
-            let outlined = look == "even" || (style.card && look != "ranked")
+            let cards = model?.lab.option("cards") ?? "mixed"
+            let look = style.informs ? cards : "mixed"
+            let rows = ["ranked", "lined", "grouped"].contains(look)
+            let outlined = look == "even" || (style.card && !rows)
+            let lifted = style.decides && (cards == "lined" || cards == "grouped")
             configuration.label
-                .background(shape.fill(look == "ranked" ? Color.clear : style.fill))
+                .background(shape.fill(rows ? Color.clear : (lifted ? Color.white.opacity(scheme == .dark ? 0.08 : 0.5) : style.fill)))
                 .background(shape.fill(Color.primary.opacity(shade)))
                 .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
