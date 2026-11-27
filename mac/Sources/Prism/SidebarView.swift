@@ -40,9 +40,10 @@ struct SidebarView: View {
         .animation(model.windowVisible ? Motion.moves(Motion.quick, reduce: reduce) : nil, value: sidebar.structure)
         // The usage limits at the sidebar's foot (EMI-408): outside the list's scrolling, gone with the sidebar.
         .safeAreaBar(edge: .bottom, spacing: Space.none) { SidebarFoot(store: store) }
-        // The count shows only while something waits; the board's "Nothing needs you" covers the quiet case.
+        // Always there, its count dimmed at 0: a bar that comes and goes changes the list's top inset after the first layout,
+        // and the rows then rest 1 to 3 px apart from one launch to the next (EMI-486).
         .safeAreaBar(edge: .top, spacing: Space.none) {
-            if sidebar.waitingOnYou > 0 { WaitingHeader(count: sidebar.waitingOnYou).transition(Motion.needsYouTransition(reduce: reduce)) }
+            WaitingHeader(count: sidebar.waitingOnYou)
         }
         .onChange(of: model.foldRequest) { _, request in
             guard let id = request?.target.split(separator: ":", maxSplits: 1).last, request?.target.hasPrefix("track:") == true,

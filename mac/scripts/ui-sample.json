@@ -77,6 +77,15 @@
       "name": "list unfolded",
       "at": 24, "do": "fold", "fold": "track:121",
       "shot": "list-unfolded"
+    },
+    {
+      "name": "hover the Handled heading (scrolled into view)",
+      "at": 26, "do": "hover", "target": "handled",
+      "shot": "handled-heading-hover"
+    },
+    {
+      "name": "pointer away from the Handled heading",
+      "at": 28, "do": "hover", "target": ""
     }
   ]
 }

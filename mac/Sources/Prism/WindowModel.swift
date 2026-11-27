@@ -37,6 +37,8 @@ final class WindowModel {
     var foldRequest: FoldRequest?
     /// The targets a demo script holds hovered and pressed with no pointer; views compare their own `targetID` with them.
     var hoveredTarget: String?
+    /// False while `make ui-check` records: a still shows the state its script sets, never the real pointer's (EMI-486).
+    var pointerLive = true
     var pressedTarget: String?
 
     /// Shows a row pressed for a moment, as a digit key's echo.
