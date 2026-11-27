@@ -35,7 +35,7 @@ func underDir(dir, root string) bool {
 // pairs, comma-separated: such a plugin stays on for tracks whose dir is under DIR (one of them,
 // when it is named more than once) and is off everywhere else. They apply to the session's
 // process, so its subagents get them too. A track that works on an artifact keeps the Artifact
-// tool (EMI-471).
+// tool.
 func leanSettings(dir string, artifacts bool) map[string]any {
 	plugins := map[string]bool{}
 	for _, p := range envList("TRACKS_LEAN_PLUGINS_OFF") {
