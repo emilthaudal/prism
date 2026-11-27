@@ -16,7 +16,7 @@ struct SidebarView: View {
         let now = store.now
         List(selection: $model.selection) {
             DeskRow(desk: s.desk, children: sidebar.deskSessions.count)
-                .modifier(ScriptedShade(id: "row:desk", model: model))
+                .modifier(ScriptedShade(id: "row:desk", model: model, item: .desk))
                 .tag(SidebarItem.desk)
             ForEach(sidebar.deskSessions) { item in sessionRows(item, now: now) }
             ForEach(sidebar.sections) { section in
@@ -68,7 +68,7 @@ struct SidebarView: View {
         ForEach(section.tracks) { row in
             let expanded = folds.isExpanded(row)
             TrackRow(row: row, expanded: expanded, now: now) { toggle(row) }
-            .modifier(ScriptedShade(id: "row:track:\(row.id)", model: model))
+            .modifier(ScriptedShade(id: "row:track:\(row.id)", model: model, item: .track(row.id)))
             .tag(SidebarItem.track(row.id))
             .contextMenu { TrackMenu(store: store, row: row) }
             if expanded {
@@ -83,9 +83,10 @@ struct SidebarView: View {
     @ViewBuilder
     private func sessionRows(_ item: SidebarSession, now: Date, lane: Color? = nil, track: String? = nil, last: Bool = true) -> some View {
         SessionRow(item: item, now: now, lane: lane, track: track)
-            .modifier(ScriptedShade(id: "row:session:\(item.id)", model: model))
             .padding(.leading, Theme.childIndent)
             .modifier(TreeLines(color: lane, place: TreePlace(depth: 1, last: last, hasChildren: !item.subagents.isEmpty)))
+            // After the indent, so the shade spans the row as the list's highlight does.
+            .modifier(ScriptedShade(id: "row:session:\(item.id)", model: model, item: .session(item.id)))
             .tag(SidebarItem.session(item.id))
             .contextMenu { SessionMenu(store: store, session: item.session) }
         ForEach(Array(item.subagents.enumerated()), id: \.offset) { i, agent in

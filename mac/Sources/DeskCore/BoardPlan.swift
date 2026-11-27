@@ -30,6 +30,8 @@ public struct TrackBrief: Equatable, Sendable, Identifiable {
     public var person: String?
     public var links: [BriefLink]
     public var id: String { track.id }
+    /// Whether the card says anything beyond the track's state: a goal, today's plan, a check or links.
+    public var hasPlan: Bool { goal != nil || today != nil || check != nil || !links.isEmpty }
 }
 
 /// One live overnight loop on the board.
@@ -95,19 +97,27 @@ public struct BoardPlan: Equatable, Sendable {
         let rows = Sidebar(s).sections
         // A track with a live loop has its card under Loops already.
         let looping = Set(LoopBrief.all(s).compactMap { $0.track?.id })
-        briefs = rows.filter { ["focus", "background"].contains($0.mode) }.flatMap(\.tracks).filter { !looping.contains($0.track.id) }.map { row in
-            TrackBrief(
-                track: row.track,
-                chip: row.chip,
-                goal: Self.text(row.track.goal),
-                now: Self.text(row.track.where) ?? row.primary?.liveActivity.map(Activity.readable) ?? row.primary?.lastAnswerGist,
-                today: Self.text(row.track.today),
-                check: row.track.check,
-                person: row.track.waitingOnPerson,
-                links: (row.track.links ?? []).compactMap(BriefLink.init)
-            )
-        }
+        briefs = rows.filter { ["focus", "background"].contains($0.mode) }.flatMap(\.tracks).filter { !looping.contains($0.track.id) }.map(Self.brief)
         waiting = rows.filter { $0.mode == "waiting" }.flatMap(\.tracks).map { WaitingBrief(track: $0.track, detail: $0.line ?? $0.track.blocker) }
+    }
+
+    static func brief(_ row: SidebarTrack) -> TrackBrief {
+        TrackBrief(
+            track: row.track,
+            chip: row.chip,
+            goal: text(row.track.goal),
+            now: text(row.track.where) ?? row.primary?.liveActivity.map(Activity.readable) ?? row.primary?.lastAnswerGist,
+            today: text(row.track.today),
+            check: row.track.check,
+            person: row.track.waitingOnPerson,
+            links: (row.track.links ?? []).compactMap(BriefLink.init)
+        )
+    }
+
+    /// A brief per focus, background and waiting track without a live loop, whatever the board's state.
+    public static func openBriefs(_ s: Snapshot) -> [TrackBrief] {
+        let looping = Set(LoopBrief.all(s).compactMap { $0.track?.id })
+        return Sidebar(s).sections.filter { ["focus", "background", "waiting"].contains($0.mode) }.flatMap(\.tracks).filter { !looping.contains($0.track.id) }.map(brief)
     }
 
     static func text(_ s: String?) -> String? {
