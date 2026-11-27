@@ -133,6 +133,45 @@ func TestAsksMirrorWithAStableIDAndCloseOnRemoval(t *testing.T) {
 	}
 }
 
+// A session that got its answer and still lists the same ask is asking again: the ask gets a new
+// question in the queue, not the answered one it had (seen: a "yes, I'll sign in" answer, then the
+// same ask re-listed on the card, and the queue empty for hours).
+func TestAnAskListedAgainAfterItsAnswerWasDeliveredIsAskedAgain(t *testing.T) {
+	s := newStore(t)
+	mustTrack(t, s, "alpha")
+	ask := "Type the sign-in command here, then tell me. Recommend: yes"
+	card := func(asks ...string) {
+		if _, err := s.Card("alpha", CardUpdate{Asks: asks, Where: ptr("w")}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	card(ask)
+	qs, _ := s.OpenQuestions()
+	if len(qs) != 1 {
+		t.Fatalf("%d questions, want 1", len(qs))
+	}
+	first := qs[0]
+	if _, err := s.DecideDelivered(first.ID, 1, "", "emil"); err != nil {
+		t.Fatal(err)
+	}
+	card(ask)
+	qs, _ = s.OpenQuestions()
+	if len(qs) != 1 || qs[0].ID == first.ID || qs[0].Question != first.Question {
+		t.Fatalf("after re-ask: %+v, want one new question (not %d)", qs, first.ID)
+	}
+	if got, _ := s.GetQuestion(first.ID); got.AnswerOption != 1 {
+		t.Errorf("the first answer changed: %+v", got)
+	}
+	// The new ask keeps its id while it waits, like any other.
+	card(ask)
+	if again, _ := s.OpenQuestions(); len(again) != 1 || again[0].ID != qs[0].ID {
+		t.Fatalf("a second write moved the open question: %+v", again)
+	}
+	if n, _ := s.Card("alpha", CardUpdate{Where: ptr("w")}); len(n.Asks) != 1 {
+		t.Fatalf("%d open asks on the card, want 1", len(n.Asks))
+	}
+}
+
 func TestParseAsk(t *testing.T) {
 	for in, want := range map[string]ParsedAsk{
 		"Which? (1) one (2) two (3) three or four Recommend: 1":      {"Which?", []QOption{{Label: "one"}, {Label: "two"}, {Label: "three or four"}}, 1, "1", nil},
