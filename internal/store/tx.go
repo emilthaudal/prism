@@ -236,6 +236,12 @@ func (s *Store) reconcileAsks(tx *wtx, trackID int64, texts []string) error {
 		return err
 	}
 	now := fmtTime(s.now())
+	var answered map[int64]bool
+	if !s.stale { // another process is migrating: the questions table may not be there yet
+		if answered, err = answeredAsks(tx, trackID); err != nil {
+			return err
+		}
+	}
 	var order []int64
 	keep := map[int64]bool{}
 	listed := map[string]bool{}
@@ -245,9 +251,11 @@ func (s *Store) reconcileAsks(tx *wtx, trackID int64, texts []string) error {
 		}
 		listed[text] = true
 		// A listed text that is an open check ask keeps that check row, as today's rewrite
-		// dedupes by text: an agent re-sending what it read must not show it twice.
+		// dedupes by text: an agent re-sending what it read must not show it twice. An agent ask
+		// whose answer the session already got is asked again: it is a new ask, with a new question,
+		// since the answered one stays answered and the queue would show nothing.
 		i := slices.IndexFunc(open, func(a Ask) bool {
-			return (a.Kind == kindAgent || a.Kind == kindCheck) && a.Text == text && !keep[a.ID]
+			return (a.Kind == kindAgent || a.Kind == kindCheck) && a.Text == text && !keep[a.ID] && !answered[a.ID]
 		})
 		if i >= 0 {
 			keep[open[i].ID] = true
@@ -285,6 +293,27 @@ func (s *Store) reconcileAsks(tx *wtx, trackID int64, texts []string) error {
 		}
 	}
 	return nil
+}
+
+// answeredAsks are the track's open asks whose question was answered and the answer delivered to
+// the session, so a card write after that one which still lists the ask is asking it again.
+func answeredAsks(tx *wtx, trackID int64) (map[int64]bool, error) {
+	rows, err := tx.Query(`SELECT a.id FROM asks a WHERE a.track_id = ? AND a.closed_at IS NULL
+		AND EXISTS (SELECT 1 FROM questions q WHERE q.ask_id = a.id AND q.answered_at IS NOT NULL AND q.delivered_at IS NOT NULL)
+		AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.ask_id = a.id AND q.closed_at IS NULL)`, trackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]bool{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
+	}
+	return out, rows.Err()
 }
 
 // Rename is tracks rename: NEW joins names, OLD is retired, the track takes the new name and a
