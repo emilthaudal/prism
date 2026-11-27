@@ -28,7 +28,12 @@ struct Lab: Equatable {
         ]),
         Choice(number: 5, surface: "Sidebar", key: "marks", title: "Status marks", options: ["dots", "shapes"], notes: [
             "Today: finished, idle, a question and blocked are dots of one shape, told apart by colour.",
-            "Each state has its own shape: a tick for finished, a pause for idle, the board's diamond for what needs you.",
+            "Each state has its own shape, drawn like the dot: a ring once seen, a short bar for idle, the board's diamond for what needs you.",
+        ]),
+        Choice(number: 8, surface: "Sidebar", key: "tree", title: "Session lines", options: ["elbows", "quiet", "rail"], notes: [
+            "Today: a trunk and an elbow into each session's mark, as heavy as the marks.",
+            "The same tree in a hairline at half strength, joined to the lane chip and stopping short of each mark.",
+            "No tree. The track's lane chip runs on as one bar beside its sessions; the indent says the rest.",
         ]),
         Choice(number: 6, surface: "Sidebar", key: "usage", title: "Usage", options: ["two lines", "one line"], notes: [
             "Today: each limit is a bar with its reset time on a line below.",
