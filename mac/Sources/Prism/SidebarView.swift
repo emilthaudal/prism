@@ -37,6 +37,9 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // The list is built anew when the bar above it comes or goes. A bar put over a list that is already laid out
+        // changed its top inset late, and the rows then rested 1 to 3 px apart from one launch to the next (EMI-486).
+        .id(sidebar.waitingOnYou > 0)
         .animation(model.windowVisible ? Motion.moves(Motion.quick, reduce: reduce) : nil, value: sidebar.structure)
         // The usage limits at the sidebar's foot (EMI-408): outside the list's scrolling, gone with the sidebar.
         .safeAreaBar(edge: .bottom, spacing: Space.none) { SidebarFoot(store: store) }
@@ -133,6 +136,14 @@ struct TrackRow: View {
         let quiet = row.nested.isEmpty && [.stopped, .idle].contains(row.primary?.state) && row.track.waitingOnPerson == nil
         HStack(spacing: Space.s) {
             LaneChip(color: lane, height: row.line == nil ? Theme.laneChip.height : Theme.laneChipTall)
+                // The chip runs on down to its sessions' bar, which a row below can't reach up to.
+                .overlay(alignment: .top) {
+                    if expanded, !row.nested.isEmpty {
+                        Rectangle().fill(lane)
+                            .frame(width: Theme.laneChip.width, height: Theme.treeReach)
+                            .offset(y: Theme.laneChip.height / 2)
+                    }
+                }
                 .frame(width: Space.l)
             // The name always shows; the second line says what the track does, waits on or last said (Compact).
             VStack(alignment: .leading, spacing: Space.xxs) {
@@ -242,19 +253,44 @@ struct ChipIcon: View {
     @Environment(\.accessibilityReduceMotion) private var reduce
 
     var body: some View {
+        // One shape per state, so no two differ by colour alone: a turning ring at work, a dot for finished, a ring once
+        // seen or stopped, a short bar for idle, the board's diamond for what needs Emil (EMI-484).
         ZStack {
             switch chip {
             case .working: Spinner(color: lane).transition(Motion.fadeTransition)
             case .doneUnseen: Dot(color: Theme.done).transition(Motion.fadeTransition)
             case .done: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
-            case .idle: Dot(color: Theme.queued).transition(Motion.fadeTransition)
+            case .idle: StatusDash(color: Theme.queued).transition(Motion.fadeTransition)
             case .stopped: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
-            case .question: Dot(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
-            case .permission, .error: Dot(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
+            case .question: StatusDiamond(color: Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
+            case .permission, .error: StatusDiamond(color: Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
             default: Color.clear.frame(width: Theme.dotSize, height: Theme.dotSize)
             }
         }
         .animation(Motion.fade, value: chip)
+    }
+}
+
+/// Idle: a short bar at the weight of the lane lines, drawn like the dot and the ring, not a glyph.
+struct StatusDash: View {
+    var color: Color
+
+    var body: some View {
+        Capsule().fill(color).frame(width: Theme.dotSize, height: Theme.laneRail)
+            .frame(width: Theme.dotSize, height: Theme.dotSize)
+    }
+}
+
+/// What needs Emil: one diamond for a session's row, a report and a decision's card, at the dot's weight by default.
+struct StatusDiamond: View {
+    var color: Color
+    var size = Theme.dotSize
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1, style: .continuous).fill(color)
+            .frame(width: size - 1, height: size - 1)
+            .rotationEffect(.degrees(45))
+            .frame(width: size, height: size)
     }
 }
 

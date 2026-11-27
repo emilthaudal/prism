@@ -15,9 +15,11 @@ struct LoopsSection: View {
                 Spacer(minLength: Space.s)
                 OvernightButton(model: model).padding(.top, Space.m).padding(.trailing, Space.m)
             }
-            ForEach(loops) { brief in
-                LoopCard(store: store, brief: brief) { model.selection = .session(brief.session.id) }
-                    .arrives(brief.id)
+            BoardGroup {
+                ForEach(loops) { brief in
+                    LoopCard(store: store, brief: brief) { model.selection = .session(brief.session.id) }
+                        .arrives(brief.id)
+                }
             }
         }
     }
@@ -32,7 +34,7 @@ struct LoopCard: View {
 
     var body: some View {
         Button(action: open) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, informs: true))
     }
 
     private var card: some View {

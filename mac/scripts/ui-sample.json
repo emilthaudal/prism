@@ -64,19 +64,122 @@
       "at": 19.5, "do": "draft", "text": ""
     },
     {
+      "name": "decision loaded again",
+      "at": 20, "do": "pick", "question": "D14"
+    },
+    {
+      "name": "hover a composer option",
+      "at": 21, "do": "hover", "target": "option:D14:1",
+      "shot": "pour-option-hover"
+    },
+    {
+      "name": "press a composer option",
+      "at": 23, "do": "press", "target": "option:D14:1",
+      "shot": "pour-option-pressed"
+    },
+    {
+      "name": "release the option",
+      "at": 25, "do": "press", "target": ""
+    },
+    {
+      "name": "hover a card capsule",
+      "at": 25.2, "do": "hover", "target": "card-option:D14:1",
+      "shot": "pour-card-option-hover"
+    },
+    {
+      "name": "press a card capsule",
+      "at": 27.2, "do": "press", "target": "card-option:D14:1",
+      "shot": "pour-card-option-pressed"
+    },
+    {
+      "name": "release the capsule",
+      "at": 29.2, "do": "press", "target": ""
+    },
+    {
+      "name": "pointer off the capsule",
+      "at": 29.4, "do": "hover", "target": ""
+    },
+    {
+      "name": "answer, the countdown pill",
+      "at": 29.6, "do": "answer", "question": "D14", "option": 2,
+      "shot": "pour-pill"
+    },
+    {
+      "name": "hover Undo",
+      "at": 31, "do": "hover", "target": "undo:D14",
+      "shot": "pour-undo-hover"
+    },
+    {
+      "name": "press Undo",
+      "at": 32.2, "do": "press", "target": "undo:D14",
+      "shot": "pour-undo-pressed"
+    },
+    {
+      "name": "Undo",
+      "at": 33.4, "do": "undo", "question": "D14"
+    },
+    {
+      "name": "release Undo",
+      "at": 33.5, "do": "press", "target": ""
+    },
+    {
+      "name": "pointer off Undo",
+      "at": 33.6, "do": "hover", "target": ""
+    },
+    {
+      "name": "answer again, the card shows the pill",
+      "at": 35, "do": "answer", "question": "D14", "option": 3,
+      "shot": "pour-card-pill"
+    },
+    {
+      "name": "hover the card Undo",
+      "at": 36.4, "do": "hover", "target": "card-undo:D14",
+      "shot": "pour-card-undo-hover"
+    },
+    {
+      "name": "press the card Undo",
+      "at": 37.6, "do": "press", "target": "card-undo:D14",
+      "shot": "pour-card-undo-pressed"
+    },
+    {
+      "name": "Undo from the card",
+      "at": 38.8, "do": "undo", "question": "D14"
+    },
+    {
+      "name": "release the card Undo",
+      "at": 38.9, "do": "press", "target": ""
+    },
+    {
+      "name": "pointer off the card Undo",
+      "at": 39, "do": "hover", "target": ""
+    },
+    {
+      "name": "card closed for the message field",
+      "at": 39.2, "do": "dismiss"
+    },
+    {
       "name": "composer focused",
-      "at": 20, "do": "focus", "field": "desk",
+      "at": 40, "do": "focus", "field": "desk",
       "shot": "composer-focused"
     },
     {
       "name": "list folded",
-      "at": 22, "do": "fold", "fold": "track:121",
+      "at": 42, "do": "fold", "fold": "track:121",
       "shot": "list-folded"
     },
     {
       "name": "list unfolded",
-      "at": 24, "do": "fold", "fold": "track:121",
+      "at": 44, "do": "fold", "fold": "track:121",
       "shot": "list-unfolded"
+    },
+    {
+      "name": "hover the Handled heading (scrolled into view)",
+      "at": 46, "do": "hover", "target": "handled",
+      "shot": "handled-heading-hover"
+    },
+    {
+      "name": "pointer away from the Handled heading",
+      "at": 48, "do": "hover", "target": ""
     }
   ]
 }

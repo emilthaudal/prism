@@ -53,6 +53,21 @@ type apiTrack struct {
 	Links     []string  `json:"links"`
 	BlockedBy []string  `json:"blocked_by"`
 	UpdatedAt time.Time `json:"updated_at"`
+	// Milestones are the steps to the goal, in order (EMI-485), left out when the track has none.
+	Milestones []apiMilestone `json:"milestones,omitempty"`
+}
+
+type apiMilestone struct {
+	Title string `json:"title"`
+	Done  bool   `json:"done"`
+}
+
+func apiMilestones(list []store.Milestone) []apiMilestone {
+	var out []apiMilestone
+	for _, m := range list {
+		out = append(out, apiMilestone{Title: m.Title, Done: m.Done()})
+	}
+	return out
 }
 
 // apiCheck is a track's check: line as tracks check last answered it: answer is "yes" or "no",
@@ -251,6 +266,7 @@ func (l *liveSource) snapshot(ctx context.Context) (any, error) {
 		handled []store.DeskLogEntry
 		deskID  string
 		checks  []store.NamedCheck
+		miles   map[int64][]store.Milestone
 	)
 	now := time.Now()
 	err := withBareStore(func(st *store.Store) (err error) {
@@ -258,6 +274,9 @@ func (l *liveSource) snapshot(ctx context.Context) (any, error) {
 			return err
 		}
 		if checks, err = st.AllChecks(); err != nil {
+			return err
+		}
+		if miles, err = st.AllMilestones(); err != nil {
 			return err
 		}
 		if list, err = st.Sessions(); err != nil {
@@ -301,7 +320,7 @@ func (l *liveSource) snapshot(ctx context.Context) (any, error) {
 		trackID[t.Name] = id
 		shown := shownMode(t.Mode, idle(t.Check, t.WaitingOn, len(v.Asks), working[t.Name]))
 		snap.Tracks = append(snap.Tracks, apiTrack{ID: id, Name: t.Name, Goal: t.Goal, Mode: t.Mode, ShownMode: shown, Tier: t.Tier, Rank: t.Rank, Today: t.Today,
-			Where: t.Where, WaitingOn: t.WaitingOn, Check: trackCheck(t.Check, rec, recOK), Links: nonNil(splitLinks(t.Links)), BlockedBy: nonNil(t.BlockedBy), UpdatedAt: apiTime(t.UpdatedAt)})
+			Where: t.Where, WaitingOn: t.WaitingOn, Check: trackCheck(t.Check, rec, recOK), Links: nonNil(splitLinks(t.Links)), BlockedBy: nonNil(t.BlockedBy), UpdatedAt: apiTime(t.UpdatedAt), Milestones: apiMilestones(miles[t.ID])})
 	}
 	for _, s := range list {
 		if s.Host == "stopped" && now.Sub(s.UpdatedAt) > serveRecent {

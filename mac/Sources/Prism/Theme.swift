@@ -79,6 +79,8 @@ enum Theme {
     static let removed = Color(nsColor: .systemRed)
     static let hairline = Color.primary.opacity(0.09)
     static let cardFill = Color.primary.opacity(0.04)
+    /// What a decision's card sits on: lighter than the board, where every other row shares its section's sheet.
+    static func lifted(_ scheme: ColorScheme) -> Color { Color.white.opacity(scheme == .dark ? 0.08 : 0.5) }
 
     /// Text inside a card or bubble sits at least its corner radius from the edge.
     static let cardRadius = Space.m
@@ -113,9 +115,10 @@ enum Theme {
     /// The lane mark beside a track row's two lines.
     static let laneChipTall: CGFloat = 28
     static let laneRail: CGFloat = 2
-    static let treeRadius: CGFloat = 6
     /// How far a row's tree lines reach past its top and bottom: across the gap between sidebar rows.
     static let treeBleed = Space.m
+    /// How far above a session's row its piece of the lane bar starts, to meet the track's lane chip.
+    static let treeReach = Space.xxl
     /// The frosted glass over the wall in the side columns (the mockup's --w-glass): the wall's colour shows through.
     /// Enough to melt the gradient's pinwheel centre into a wash, as the mockup's glass does.
     static let wallBlur: CGFloat = 64
@@ -235,7 +238,13 @@ extension Font {
 extension View {
     /// The window's title bar is transparent, so a scrolling message would print through the title; the scroll view
     /// shows only what is below the title.
-    func scrollsBelowTitle() -> some View { mask(Rectangle()) }
+    func scrollsBelowTitle() -> some View {
+        // Thinned out over one line, so no line of text is cut in half under the title (EMI-483).
+        mask(VStack(spacing: Space.none) {
+            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom).frame(height: Space.xxl)
+            Rectangle()
+        })
+    }
 
     /// Plain text in the conversation column: shapes sit Space.m in, text Space.xxl, so text is Space.l inside the shapes' edge.
     func conversationText() -> some View { padding(.horizontal, Space.l) }
@@ -283,9 +292,9 @@ struct TreePlace {
     var hasChildren = false
 }
 
-/// The tree lines in the lane colour from a track down to its sessions and subagents (direction B, the mockup's
-/// `.row.child`): a trunk under the parent's mark and a rounded elbow into each child's mark. Each row draws its piece
-/// past its own top and bottom, across the gap between list rows, so the pieces join into one line (EMI-411).
+/// A track's lane beside its sessions and their subagents: the lane chip runs on as one bar, and the indent says which
+/// row is whose (EMI-484; a tree of elbows into each mark was tried and read as heavy and untidy). Each row draws its
+/// piece past its own top and bottom, across the gap between list rows, so the pieces join into one bar.
 struct TreeLines: ViewModifier {
     var color: Color?
     var place: TreePlace
@@ -295,36 +304,13 @@ struct TreeLines: ViewModifier {
             if let color {
                 GeometryReader { geo in
                     let h = geo.size.height
-                    let bleed = Theme.treeBleed
-                    // The parent's mark is centred in a Space.l frame at the parent's indent.
-                    let x = Theme.childIndent * CGFloat(place.depth - 1) + Space.l / 2
-                    let mid = min(h / 2, Space.m)
-                    ZStack(alignment: .topLeading) {
-                        Path { p in
-                            p.move(to: CGPoint(x: x, y: -bleed))
-                            p.addLine(to: CGPoint(x: x, y: mid - Theme.treeRadius))
-                            p.addQuadCurve(to: CGPoint(x: x + Theme.treeRadius, y: mid), control: CGPoint(x: x, y: mid))
-                            p.addLine(to: CGPoint(x: Theme.childIndent * CGFloat(place.depth) + Space.xxs, y: mid))
-                        }
-                        .stroke(color, style: StrokeStyle(lineWidth: Theme.laneRail, lineCap: .round, lineJoin: .round))
-                        Path { p in
-                            if !place.last {
-                                p.move(to: CGPoint(x: x, y: mid))
-                                p.addLine(to: CGPoint(x: x, y: h + bleed))
-                            }
-                            if place.depth == 2, place.trunkContinues {
-                                p.move(to: CGPoint(x: Space.l / 2, y: -bleed))
-                                p.addLine(to: CGPoint(x: Space.l / 2, y: h + bleed))
-                            }
-                            if place.depth == 1, place.hasChildren {
-                                // From under the session's own mark down to its first subagent's elbow.
-                                let own = Theme.childIndent + Space.l / 2
-                                p.move(to: CGPoint(x: own, y: mid + Theme.spinnerSize / 2 + Space.xxs))
-                                p.addLine(to: CGPoint(x: own, y: h + bleed))
-                            }
-                        }
-                        .stroke(color, style: StrokeStyle(lineWidth: Theme.laneRail, lineCap: .butt))
+                    // The bar ends with the track's last row: its last session, or that session's last subagent.
+                    let ends = place.depth == 1 ? (place.last && !place.hasChildren) : (place.last && !place.trunkContinues)
+                    Path { p in
+                        p.move(to: CGPoint(x: Space.l / 2, y: -Theme.treeReach))
+                        p.addLine(to: CGPoint(x: Space.l / 2, y: ends ? h - Theme.laneChip.width / 2 : h + Theme.treeBleed))
                     }
+                    .stroke(color, style: StrokeStyle(lineWidth: Theme.laneChip.width, lineCap: .round))
                 }
                 .allowsHitTesting(false)
             }
@@ -528,6 +514,11 @@ struct RowButtonStyle: ButtonStyle {
     var radius = Space.s
     /// A card: its hairline darkens to 0.16 while the pointer is on it.
     var card = false
+    /// A board row that informs (a report, a track, a loop): no fill or hairline of its own, since its section's sheet
+    /// holds it (BoardGroup); it still shades under the pointer.
+    var informs = false
+    /// A decision's card: lifted to a lighter fill that nothing else on the board has (EMI-480).
+    var decides = false
 
     func makeBody(configuration: Configuration) -> some View {
         Target(configuration: configuration, style: self)
@@ -540,6 +531,7 @@ struct RowButtonStyle: ButtonStyle {
         @Environment(\.targetID) private var targetID
         @Environment(WindowModel.self) private var model: WindowModel?
         @State private var pointerOver = false
+        @Environment(\.colorScheme) private var scheme
 
         var body: some View {
             let scripted = targetID != nil && model?.hoveredTarget == targetID
@@ -547,13 +539,14 @@ struct RowButtonStyle: ButtonStyle {
             let pressed = configuration.isPressed || (targetID != nil && model?.pressedTarget == targetID)
             let shade = pressed ? 0.09 : (hovering && enabled ? 0.05 : 0)
             let shape = RoundedRectangle(cornerRadius: style.radius, style: .continuous)
+            let outlined = style.card && !style.informs
             configuration.label
-                .background(shape.fill(style.fill))
+                .background(shape.fill(style.informs ? Color.clear : (style.decides ? Theme.lifted(scheme) : style.fill)))
                 .background(shape.fill(Color.primary.opacity(shade)))
-                .overlay { if style.card { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
+                .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
                 .opacity(enabled ? 1 : 0.4)
-                .onHover { pointerOver = $0 }
+                .onHover { pointerOver = $0 && (model?.pointerLive ?? true) }
                 .animation(pressed ? nil : .easeOut(duration: 0.12), value: shade)
         }
     }
@@ -584,8 +577,22 @@ struct ScriptedShade: ViewModifier {
             // The list's highlight reaches past the row's content; the shade fills the same box.
             .background(RoundedRectangle(cornerRadius: Space.s, style: .continuous).fill(Color.primary.opacity(shade)).padding(.horizontal, -Space.s + Space.xxs).padding(.vertical, -Space.xs))
             .contentShape(Rectangle())
-            .onHover { pointerOver = $0 }
+            .onHover { pointerOver = $0 && model.pointerLive }
             .animation(.easeOut(duration: 0.12), value: shade)
+    }
+}
+
+/// The hover and pressed shade of a control the system draws and an app can't set (a bordered button, interactive glass),
+/// shown only while a demo script holds its target, so a still can show the state. A pointer on the real control draws
+/// the control's own.
+struct ScriptedTint<S: Shape>: ViewModifier {
+    var id: String
+    var shape: S
+    @Environment(WindowModel.self) private var model: WindowModel?
+
+    func body(content: Content) -> some View {
+        let shade = model?.pressedTarget == id ? 0.09 : (model?.hoveredTarget == id ? 0.05 : 0)
+        content.overlay { shape.fill(Color.primary.opacity(shade)).allowsHitTesting(false) }
     }
 }
 

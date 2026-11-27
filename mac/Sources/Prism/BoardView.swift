@@ -14,6 +14,8 @@ struct BoardView: View {
     /// Where each card sat before the latest change, to tell a card leaving or changing section from one arriving.
     @State private var before: [String: String] = [:]
     @State private var primed = false
+    /// A demo script brings the Handled heading into view to hover it (EMI-482).
+    @State private var scroll = ScrollPosition()
     @State private var recent: Set<String> = []
     @Environment(\.accessibilityReduceMotion) private var reduce
     static let quietShown = 3
@@ -78,9 +80,11 @@ struct BoardView: View {
                 }
                 if !board.reports.isEmpty {
                     SectionHeading("Reports", count: board.reports.count)
-                    ForEach(board.reports) { session in
-                        DoneReport(store: store, session: session) { model.selection = .session(session.id) }
-                            .arrives(session.id)
+                    BoardGroup {
+                        ForEach(board.reports) { session in
+                            DoneReport(store: store, session: session) { model.selection = .session(session.id) }
+                                .arrives(session.id)
+                        }
                     }
                 }
                 // A card per open track with its goal and milestones, then the loops. What a session does now is the
@@ -122,6 +126,8 @@ struct BoardView: View {
                         .padding(.vertical, Space.xs)
                     }
                     .buttonStyle(RowButtonStyle())
+                    .targetID("handled")
+                    .id("handled")
                     .padding(.horizontal, Space.m - Space.s)
                     .padding(.top, Space.m - Space.xs)
                     if isOpen {
@@ -146,10 +152,13 @@ struct BoardView: View {
                     }
                 }
             }
+            .scrollTargetLayout()
             .padding(Space.l)
             .environment(\.arrivals, motion.arrivals)
             .animation(motion.layout, value: placements)
         }
+        .scrollPosition($scroll)
+        .onChange(of: model.hoveredTarget) { _, target in if target == "handled" { scroll.scrollTo(id: "handled", anchor: .center) } }
         .onAppear {
             before = placements
             primed = true
@@ -180,6 +189,26 @@ struct BoardView: View {
 
     private func toggleHandled() {
         withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { handledOverride = !isOpen }
+    }
+}
+
+/// A board section's rows as one soft sheet, with a hairline between them: five tracks read as one object, and a
+/// milestone card that folds out grows inside it (EMI-480).
+struct BoardGroup<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+        VStack(alignment: .leading, spacing: Space.none) {
+            Group(subviews: content) { rows in
+                ForEach(Array(rows.enumerated()), id: \.element.id) { i, row in
+                    if i > 0 { Rectangle().fill(Theme.hairline).frame(height: 1).padding(.horizontal, Theme.boardCardPadding) }
+                    row
+                }
+            }
+        }
+        .background(Theme.cardFill, in: shape)
+        .clipShape(shape)
     }
 }
 
@@ -219,6 +248,7 @@ struct HandledRow: View {
     var now: Date
 
     @State private var hovering = false
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xxs) {
@@ -254,7 +284,7 @@ struct HandledRow: View {
         .padding(.vertical, Space.s)
         .padding(.horizontal, Space.m)
         .contentShape(Rectangle())
-        .onHover { hovering = $0 }
+        .onHover { hovering = $0 && (model?.pointerLive ?? true) }
         .contextMenu {
             if entry.canUndo { Button(entry.undoLabel) { Task { await store.undoHandled(entry.id) } } }
         }
@@ -296,7 +326,7 @@ struct QuestionCard: View {
 
     var body: some View {
         Button(action: pick) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true, decides: true))
             .targetID("card:\(question.id)")
     }
 
@@ -306,9 +336,8 @@ struct QuestionCard: View {
         let counting = store.answers.pending(for: question.id) != nil || store.answers.batch(containing: question.id) != nil
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(spacing: Space.s) {
-                Image(systemName: "diamond.fill")
-                    .font(.prismMeta)
-                    .foregroundStyle(permission ? Theme.alert : Theme.question)
+                // The same diamond as a session's row that needs Emil, at the card's size.
+                StatusDiamond(color: permission ? Theme.alert : Theme.question, size: Theme.spinnerSize)
                 Text(question.id).font(.prismID).foregroundStyle(.secondary).fixedSize()
                 if let lane = Theme.lane(of: track?.id) { LaneChip(color: lane) }
                 Text(track?.name ?? session?.displayName ?? "Prism").font(.callout.weight(.semibold)).lineLimit(1).layoutPriority(1)
@@ -376,6 +405,8 @@ struct QuestionCard: View {
                 .strokeBorder(.tint, lineWidth: 1.5)
                 .opacity(selected ? 1 : 0)
                 .animation(Motion.fades(Motion.settle, reduce: reduce), value: selected)
+                // Only the opacity animates: the ring's size follows the card, which jumps under Reduce Motion.
+                .geometryGroup()
         }
     }
 }
@@ -483,7 +514,7 @@ struct DoneReport: View {
 
     var body: some View {
         Button(action: open) { card }
-            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true))
+            .buttonStyle(RowButtonStyle(fill: Theme.cardFill, radius: Theme.cardRadius, card: true, informs: true))
     }
 
     private var card: some View {

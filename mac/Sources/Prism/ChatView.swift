@@ -208,7 +208,7 @@ struct DecisionChip: View {
     }
 }
 
-/// A session's report to the desk, as a card in the chat.
+/// A session's report to the desk, as text in the chat.
 struct ReportCard: View {
     var entry: ConversationEntry
     var session: Session?
@@ -256,7 +256,8 @@ struct ReportCard: View {
     private var card: some View {
         VStack(alignment: .leading, spacing: Space.s) {
             HStack(spacing: Space.s) {
-                Dot(color: color)
+                // The sidebar's marks: a dot for finished, the diamond for a session that is stuck on Emil.
+                if ["blocked", "error"].contains(entry.outcome) { StatusDiamond(color: color) } else { Dot(color: color) }
                 Text(name).font(.callout.weight(.semibold))
                 Text(outcome).font(.callout).foregroundStyle(.secondary)
                 Spacer(minLength: Space.s)
@@ -287,9 +288,8 @@ struct ReportCard: View {
                 }
             }
         }
-        .padding(Theme.cardPadding)
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous).strokeBorder(Theme.hairline))
+        // Text on the paper like Prism's own, told apart by its dot and name: glass and cards are for what takes an answer (EMI-483).
+        .conversationText()
     }
 
     private var color: Color {
@@ -394,35 +394,45 @@ struct OwnerBar: View {
     var session: Session
     @FocusState private var focus: ComposerField?
 
+    /// The bar is the piece of glass the message field is in the desk's chat, at the same place and radius, and a
+    /// decision the session asks is a second piece above it (EMI-483).
     var body: some View {
-        VStack(spacing: Space.s) {
-            if let q = model.activeQuestion(in: store.snapshot), q.session == session.id {
-                QuestionComposer(store: store, model: model, question: q, position: nil, focus: $focus)
-                    .onChange(of: model.focus) { _, request in
-                        if let request, request.field != .desk { focus = request.field }
-                    }
-            }
-            HStack(spacing: Space.m) {
-                Image(systemName: session.isEmils ? "person" : "apple.terminal").foregroundStyle(.secondary)
-                Text(session.isEmils ? "Yours. Prism leaves it alone." : "Prism's session. Read-only here.")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if session.isEmils {
-                    Button { Task { await store.giveBack(session.id) } } label: {
-                        HStack(spacing: Space.s) { Text("Give Back to Prism"); KeyHint(text: "g") }
-                    }
-                } else {
-                    Button { Task { await store.takeOver(session.id) } } label: {
-                        HStack(spacing: Space.s) { Text("Take Over"); KeyHint(text: "t") }
-                    }
-                    .buttonStyle(.borderedProminent)
+        let shape = RoundedRectangle(cornerRadius: Theme.composerRadius, style: .continuous)
+        GlassEffectContainer(spacing: Space.xs) {
+            VStack(spacing: Space.s) {
+                if let q = model.activeQuestion(in: store.snapshot), q.session == session.id {
+                    QuestionComposer(store: store, model: model, question: q, position: nil, focus: $focus)
+                        .glassEffect(.regular, in: shape)
+                        .onChange(of: model.focus) { _, request in
+                            if let request, request.field != .desk { focus = request.field }
+                        }
                 }
+                HStack(spacing: Space.m) {
+                    Image(systemName: session.isEmils ? "person" : "apple.terminal").foregroundStyle(.secondary)
+                    Text(session.isEmils ? "Yours. Prism leaves it alone." : "Prism's session. Read-only here.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if session.isEmils {
+                        Button { Task { await store.giveBack(session.id) } } label: {
+                            HStack(spacing: Space.s) { Text("Give Back to Prism"); KeyHint(text: "g") }
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button { Task { await store.takeOver(session.id) } } label: {
+                            HStack(spacing: Space.xs) { Text("Take Over"); Text("t").font(.callout.monospaced()).opacity(0.6) }
+                                .font(.callout.weight(.semibold))
+                        }
+                        .buttonStyle(InkButtonStyle())
+                    }
+                }
+                .font(.callout)
+                .padding(.horizontal, Space.l)
+                .padding(.vertical, Space.m)
+                .glassEffect(.regular, in: shape)
             }
-            .font(.callout)
-            .conversationText()
         }
         .padding(.horizontal, Space.m)
-        .padding(.vertical, Space.m)
+        .padding(.bottom, Space.l)
         .frame(maxWidth: Theme.chatMaxWidth)
         .frame(maxWidth: .infinity)
     }

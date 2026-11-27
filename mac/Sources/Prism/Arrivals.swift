@@ -8,6 +8,8 @@ struct Arrivals: Equatable {
     var fresh: Set<String> = []
     /// How a row fades out as it leaves; nil leaves it to vanish.
     var leaving: Animation?
+    /// How far below its place a fresh row starts as it fades in; 0 fades it in place (Reduce Motion).
+    var rise: CGFloat = 0
 }
 
 extension EnvironmentValues {
@@ -15,7 +17,7 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// A row that fades in place when it is fresh, and out when it leaves, if the list around it says so. Opacity is
+    /// A row that fades in when it is fresh, coming up into its place where the list gives it a rise, and out when it leaves, if the list around it says so. Opacity is
     /// its own animation, so under Reduce Motion the layout can jump while the row still fades.
     func arrives(_ id: String) -> some View { modifier(Arrives(id: id)) }
 }
@@ -28,6 +30,8 @@ private struct Arrives: ViewModifier {
     func body(content: Content) -> some View {
         let hidden = arrivals.fade != nil && arrivals.fresh.contains(id) && !shown
         content
+            .offset(y: hidden ? arrivals.rise : 0)
+            .animation(arrivals.rise > 0 ? Motion.arrive : nil, value: hidden)
             .opacity(hidden ? 0 : 1)
             .animation(arrivals.fade, value: hidden)
             .onAppear {
@@ -38,7 +42,7 @@ private struct Arrives: ViewModifier {
     }
 }
 
-/// A conversation's scroll view. A new entry fades in place while the view follows to the bottom, both only when the
+/// A conversation's scroll view. A new entry comes up into its place as it fades in while the view follows to the bottom, both only when the
 /// list had entries before, Emil is at the bottom and the window is on screen. Otherwise entries are inserted without
 /// animation, and the view stays where Emil left it.
 struct ArrivalScroll<Content: View>: View {
@@ -59,7 +63,7 @@ struct ArrivalScroll<Content: View>: View {
     var body: some View {
         let animate = windowVisible && pinned && !before.isEmpty
         ScrollView {
-            content.environment(\.arrivals, Arrivals(fade: animate ? Motion.fade : nil, fresh: Set(ids).subtracting(before).union(recent)))
+            content.environment(\.arrivals, Arrivals(fade: animate ? Motion.fade : nil, fresh: Set(ids).subtracting(before).union(recent), rise: reduce ? 0 : Space.l))
         }
         .scrollPosition($position)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
