@@ -220,6 +220,12 @@ A `desk_orders` table holds Emil's standing orders (`tracks orders add|drop`): `
 
 To roll back, install the previous binary and set `PRAGMA user_version = 14`; the old code ignores the table.
 
+## Schema 16: milestones (EMI-485)
+
+A `milestones` table holds a track's steps to its goal: `track_id`, `position` (from 1; the pair is the key), `title` and `reached_at` (null until reached). `tracks milestones NAME set TITLE...` replaces the whole list in one transaction, keeping `reached_at` for a title that is still on it; `tick` and `untick` take a number or an exact title; no argument lists them (`--json` for a script). Titles are one line, unique within a track, and not empty. Only the track's agent writes them. They are not rendered into the card file, and `prism server` sends them in the snapshot (docs/serve-api.md). Deleting a thread that never started deletes its milestones.
+
+A database at 15 goes to 16 in one open, under `migrate.lock` and after one backup (`backup/pre-migrate-v15-TIME.db` and its archive), as before. The migration only creates the empty table; no row changes. To roll back, install the previous binary and set `PRAGMA user_version = 15`; the old code ignores the table.
+
 ## 6. Decisions (2026-11-20)
 
 1. **Slice 0 now, then SQLite (option A).** Emil: yes.

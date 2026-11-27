@@ -140,6 +140,7 @@ func (s *Store) deleteUnstarted(name string, thread bool) error {
 			`DELETE FROM checks WHERE track_id = ?`,
 			`DELETE FROM names WHERE track_id = ?`,
 			`DELETE FROM blockers WHERE track_id = ?1 OR blocker_id = ?1`,
+			`DELETE FROM milestones WHERE track_id = ?`,
 		}
 		if !s.stale {
 			qs = append(qs, `UPDATE sessions SET track_id = NULL WHERE track_id = ?`, `UPDATE questions SET track_id = NULL WHERE track_id = ?`,
