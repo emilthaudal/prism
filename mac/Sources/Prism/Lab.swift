@@ -6,6 +6,7 @@ import SwiftUI
 /// the build as it is, and without --lab nothing here is reached.
 struct Lab: Equatable {
     struct Choice {
+        var surface: String
         var key: String
         var title: String
         var options: [String]
@@ -14,24 +15,32 @@ struct Lab: Equatable {
     }
 
     static let choices: [Choice] = [
-        Choice(key: "reports", title: "Reports", options: ["card", "plain", "glass"], notes: [
+        Choice(surface: "Conversation", key: "reports", title: "Reports", options: ["card", "plain", "glass"], notes: [
             "Today: a painted card, 4 % fill and a hairline.",
             "No box. A report is text on the paper like Prism's own, told apart by its dot and name; glass is left to what you act on.",
             "Each report is a piece of glass. It scrolls under the composer's glass.",
         ]),
-        Choice(key: "owner", title: "Owner bar", options: ["line", "glass"], notes: [
+        Choice(surface: "Conversation", key: "owner", title: "Owner bar", options: ["line", "glass"], notes: [
             "Today: a line of text and a system button on the paper.",
             "One piece of glass where the message field sits, the action in ink like Send. A decision above it is a second piece.",
         ]),
-        Choice(key: "arrive", title: "Arrivals", options: ["fade", "rise"], notes: [
+        Choice(surface: "Conversation", key: "arrive", title: "Arrivals", options: ["fade", "rise"], notes: [
             "Today: a new entry fades in where it lands.",
             "A new entry comes up from the composer's edge as it fades in; your own message grows out of the field's corner.",
         ]),
-        Choice(key: "edge", title: "Top edge", options: ["cut", "soft"], notes: [
+        Choice(surface: "Conversation", key: "edge", title: "Top edge", options: ["cut", "soft"], notes: [
             "Today: the conversation is cut straight under the title.",
             "The conversation thins out under the title over one line's height.",
         ]),
-        Choice(key: "cards", title: "Board cards", options: ["mixed", "even", "ranked"], notes: [
+        Choice(surface: "Sidebar", key: "marks", title: "Status marks", options: ["dots", "shapes"], notes: [
+            "Today: finished, idle, a question and blocked are dots of one shape, told apart by colour.",
+            "Each state has its own shape: a tick for finished, a pause for idle, the board's diamond for what needs you.",
+        ]),
+        Choice(surface: "Sidebar", key: "usage", title: "Usage", options: ["two lines", "one line"], notes: [
+            "Today: each limit is a bar with its reset time on a line below.",
+            "Each limit is one line; the reset time takes the percentage's place under the pointer.",
+        ]),
+        Choice(surface: "Board", key: "cards", title: "Board cards", options: ["mixed", "even", "ranked"], notes: [
             "Today: decisions and reports have a fill and a hairline, tracks and loops a fill alone.",
             "One card for everything on the board: the fill and the hairline.",
             "Only a decision is a card. Reports, tracks and loops are rows on the board's glass and shade under the pointer.",
@@ -87,21 +96,26 @@ struct LabPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
-            HStack(spacing: Space.xs) {
-                ForEach(Array(Lab.choices.enumerated()), id: \.offset) { i, choice in
-                    Button {
-                        model.lab.step(i)
-                        last = i
-                    } label: {
-                        HStack(spacing: Space.xs) {
-                            Text("\u{2325}\(i + 1)").font(.prismMono).foregroundStyle(.tertiary)
-                            Text(choice.title).font(.prismMeta)
-                            Text(choice.options[model.lab.picks[i]].capitalized).font(.prismMeta.weight(.semibold))
+            // One row per surface, so every choice shows whole.
+            ForEach(["Conversation", "Sidebar", "Board"], id: \.self) { surface in
+                HStack(spacing: Space.xs) {
+                    Text(surface).font(.prismMeta).foregroundStyle(.tertiary).frame(width: Space.xxl * 3, alignment: .leading).padding(.leading, Space.s)
+                    ForEach(Array(Lab.choices.enumerated()).filter { $0.element.surface == surface }, id: \.offset) { i, choice in
+                        Button {
+                            model.lab.step(i)
+                            last = i
+                        } label: {
+                            HStack(spacing: Space.xs) {
+                                Text("\u{2325}\(i + 1)").font(.prismMono).foregroundStyle(.tertiary)
+                                Text(choice.title).font(.prismMeta)
+                                Text(choice.options[model.lab.picks[i]].capitalized).font(.prismMeta.weight(.semibold))
+                            }
+                            .fixedSize()
+                            .padding(.horizontal, Space.s)
+                            .frame(height: Theme.iconTarget)
                         }
-                        .padding(.horizontal, Space.s)
-                        .frame(height: Theme.iconTarget)
+                        .buttonStyle(RowButtonStyle(fill: model.lab.picks[i] == 0 ? .clear : Color.primary.opacity(0.09)))
                     }
-                    .buttonStyle(RowButtonStyle(fill: model.lab.picks[i] == 0 ? .clear : Color.primary.opacity(0.09)))
                 }
             }
             Text(Lab.choices[last].notes[model.lab.picks[last]]).font(.prismMeta).foregroundStyle(.secondary).padding(.horizontal, Space.s)

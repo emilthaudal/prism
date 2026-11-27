@@ -51,11 +51,52 @@ struct UsageMeter: View {
     var limit: UsageLimit
     var now: Date
     var dimmed: Bool
+    @Environment(WindowModel.self) private var model: WindowModel?
+    @State private var hovering = false
 
     var body: some View {
+        if model?.lab.option("usage") == "one line" { oneLine } else { twoLines }
+    }
+
+    /// EMI-484 prototype: the bar and the percentage alone; the reset time shows in the percentage's place under the pointer.
+    private var oneLine: some View {
         let level = limit.level(now: now)
         let pct = limit.shownPercentage(now: now)
-        VStack(alignment: .leading, spacing: Space.xxs) {
+        let reset = limit.resetsAt.flatMap { $0 > now ? Self.when($0, now: now) : nil }
+        return HStack(spacing: Space.s) {
+            Text(label).foregroundStyle(.primary.opacity(0.75)).fontWeight(.medium)
+                .frame(width: Theme.usageLabelWidth, alignment: .leading)
+            if level == .reached {
+                Text(reset.map { "Limit reached, back \($0)" } ?? "Limit reached").fontWeight(.semibold).foregroundStyle(color(level))
+                Spacer(minLength: 0)
+            } else {
+                Capsule().fill(Theme.hairline)
+                    .frame(height: 4)
+                    .overlay(alignment: .leading) {
+                        GeometryReader { g in
+                            Capsule().fill(color(level)).frame(width: g.size.width * CGFloat(pct) / 100)
+                        }
+                    }
+                Group {
+                    if hovering, let reset { Text("resets \(reset)") } else {
+                        Text("\(pct)%").monospacedDigit().fontWeight(.semibold)
+                            .foregroundStyle(level == .plenty ? AnyShapeStyle(.primary) : AnyShapeStyle(color(level)))
+                    }
+                }
+                .fixedSize()
+            }
+        }
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
+        .animation(Motion.fade, value: hovering)
+        .opacity(dimmed ? 0.55 : 1)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var twoLines: some View {
+        let level = limit.level(now: now)
+        let pct = limit.shownPercentage(now: now)
+        return VStack(alignment: .leading, spacing: Space.xxs) {
             HStack(spacing: Space.s) {
                 Text(label).foregroundStyle(.primary.opacity(0.75)).fontWeight(.medium)
                     .frame(width: Theme.usageLabelWidth, alignment: .leading)

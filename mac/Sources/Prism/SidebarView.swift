@@ -240,11 +240,17 @@ struct ChipIcon: View {
     var lane: Color? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
+        let shapes = model?.lab.option("marks") == "shapes"
         ZStack {
             switch chip {
             case .working: Spinner(color: lane).transition(Motion.fadeTransition)
+            case .doneUnseen where shapes: mark("checkmark", Theme.done).transition(Motion.fadeTransition)
+            case .idle where shapes: mark("pause.fill", Theme.queued).transition(Motion.fadeTransition)
+            case .question where shapes: mark("diamond.fill", Theme.question).transition(Motion.needsYouTransition(reduce: reduce))
+            case .permission where shapes, .error where shapes: mark("diamond.fill", Theme.alert).transition(Motion.needsYouTransition(reduce: reduce))
             case .doneUnseen: Dot(color: Theme.done).transition(Motion.fadeTransition)
             case .done: Dot(color: .secondary, hollow: true).transition(Motion.fadeTransition)
             case .idle: Dot(color: Theme.queued).transition(Motion.fadeTransition)
@@ -255,6 +261,13 @@ struct ChipIcon: View {
             }
         }
         .animation(Motion.fade, value: chip)
+    }
+}
+
+extension ChipIcon {
+    /// EMI-484 prototype: a state's own shape, at the dot's weight.
+    fileprivate func mark(_ symbol: String, _ color: Color) -> some View {
+        Image(systemName: symbol).font(.caption2.weight(.bold)).foregroundStyle(color).frame(width: Theme.spinnerSize, height: Theme.spinnerSize)
     }
 }
 
