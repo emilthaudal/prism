@@ -1,6 +1,6 @@
 package store
 
-const schemaVersion = ordersSchema
+const schemaVersion = milestonesSchema
 
 const schema = `
 CREATE TABLE IF NOT EXISTS tracks (
@@ -181,6 +181,13 @@ CREATE TABLE IF NOT EXISTS desk_orders (
   text       TEXT NOT NULL,
   created_at TEXT NOT NULL,
   dropped_at TEXT
+);
+CREATE TABLE IF NOT EXISTS milestones (
+  track_id   INTEGER NOT NULL REFERENCES tracks(id),
+  position   INTEGER NOT NULL,
+  title      TEXT NOT NULL,
+  reached_at TEXT,
+  PRIMARY KEY (track_id, position)
 );
 CREATE TABLE IF NOT EXISTS desk_queue (
   id         INTEGER PRIMARY KEY,

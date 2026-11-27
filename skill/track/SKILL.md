@@ -20,6 +20,7 @@ The card is `${TRACKS_HOME:-$HOME/.local/state/tracks}/cards/NAME.md`, a view: t
    - Find where the work lives: a repo under `~/Developer`. If `dir:` is still the default (`$TRACKS_DEFAULT_DIR`, else `~/Developer`), set it to that repo with `dir:` and `cd` there; never change a `dir:` Emil chose. If no repo fits, leave it.
    - Set the tier (see Tiers).
    - Rewrite the Goal with `goal:` as one line of what done looks like, keeping his intent. If you cannot say what done looks like, or how you would prove it, ask before you write code, not halfway through.
+   - Write three to seven milestones with `tracks milestones NAME set 'title' 'title' …`: each an outcome someone could check ("login rejects an expired token"), not an activity ("work on login"). They are the steps to the goal, in order, and the board shows them.
    - If it is a question with no lasting work, such as "what does X do?", answer it in the session, write the gist of the answer as `where:`, and close the track yourself as Closing says (Emil, D132), so the answer stays readable in `where:` after the session ends.
    - If the Goal is still `One line: what done looks like.`, there is no request: ask Emil what the track is for.
 5. Say in one or two lines where the track is and what you will do next, then do it.
@@ -52,6 +53,8 @@ A field you leave out stays as it is. Each field starts a line; `where:`, `asks:
 - `waiting_on:` and `check:` when the track waits (see Rules).
 - `later:` follow-ups that go nowhere else, one per line.
 - `goal:` and `dir:` on the first turn of a `Not started.` track.
+
+Milestones are not part of `tracks card`; they have a command of their own, and only you change them. When one is reached, tick it with `tracks milestones NAME tick N` (its number, or its exact title), in the same turn as the work that reached it. `untick` takes it back. When the plan changes, write the whole list again with `set`: a title you keep stays ticked. `tracks milestones NAME` lists them. Nothing ticks a milestone for you, and a check does not either.
 
 Emil answers from the pane or Prism as one line, "Emil's answer to your ask N, "the ask's text": the option or his words." That line answers that one ask and nothing else. The command prints the asks, numbered. End your reply with them, so Emil can answer in one message ("1 yes, 2 B"). If it prints `closed`, Emil closed the track meanwhile: say so in your reply. If it prints `renamed to NEW`, use NEW from then on.
 

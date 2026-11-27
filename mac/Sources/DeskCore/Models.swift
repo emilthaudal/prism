@@ -97,7 +97,7 @@ public struct Track: Codable, Equatable, Sendable, Identifiable {
     public var links: [String]?
     public var blockedBy: [String]?
     public var updatedAt: Date?
-    /// The steps to the goal, in order. Fixtures only so far: prism server does not send them yet (EMI-485).
+    /// The steps to the goal, in order. prism server sends them when the track's agent set any (EMI-485); the key is absent otherwise.
     public var milestones: [Milestone]?
 
     public init(id: String, name: String, goal: String? = nil, mode: String = "focus", shownMode: String? = nil, tier: String? = nil, rank: Int? = nil, today: String? = nil, where: String? = nil, waitingOn: String? = nil, check: TrackCheck? = nil, links: [String]? = nil, blockedBy: [String]? = nil, updatedAt: Date? = nil, milestones: [Milestone]? = nil) {
