@@ -203,6 +203,9 @@ public struct Subagent: Codable, Equatable, Sendable {
     }
 
     public var isWorking: Bool { status == "working" }
+
+    /// A finished subagent with no name has nothing to show.
+    public var isEmptyAndDone: Bool { !isWorking && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 }
 
 public struct Session: Codable, Equatable, Sendable, Identifiable {
