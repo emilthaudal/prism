@@ -96,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
+            if options.uiDir != nil { model.pointerLive = false }
             do {
                 player = ScriptPlayer(script: try DemoScript.load(path), store: store, fixture: fixture, model: model, motionDir: options.motionDir, uiDir: options.uiDir)
                 player?.play(in: view)

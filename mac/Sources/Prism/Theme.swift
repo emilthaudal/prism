@@ -557,7 +557,7 @@ struct RowButtonStyle: ButtonStyle {
                 .overlay { if outlined { shape.strokeBorder(hovering && enabled ? Color.primary.opacity(0.16) : Theme.hairline) } }
                 .contentShape(shape)
                 .opacity(enabled ? 1 : 0.4)
-                .onHover { pointerOver = $0 }
+                .onHover { pointerOver = $0 && (model?.pointerLive ?? true) }
                 .animation(pressed ? nil : .easeOut(duration: 0.12), value: shade)
         }
     }
@@ -588,7 +588,7 @@ struct ScriptedShade: ViewModifier {
             // The list's highlight reaches past the row's content; the shade fills the same box.
             .background(RoundedRectangle(cornerRadius: Space.s, style: .continuous).fill(Color.primary.opacity(shade)).padding(.horizontal, -Space.s + Space.xxs).padding(.vertical, -Space.xs))
             .contentShape(Rectangle())
-            .onHover { pointerOver = $0 }
+            .onHover { pointerOver = $0 && model.pointerLive }
             .animation(.easeOut(duration: 0.12), value: shade)
     }
 }

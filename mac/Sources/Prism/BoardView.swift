@@ -14,6 +14,8 @@ struct BoardView: View {
     /// Where each card sat before the latest change, to tell a card leaving or changing section from one arriving.
     @State private var before: [String: String] = [:]
     @State private var primed = false
+    /// A demo script brings the Handled heading into view to hover it (EMI-482).
+    @State private var scroll = ScrollPosition()
     @State private var recent: Set<String> = []
     @Environment(\.accessibilityReduceMotion) private var reduce
     static let quietShown = 3
@@ -122,6 +124,8 @@ struct BoardView: View {
                         .padding(.vertical, Space.xs)
                     }
                     .buttonStyle(RowButtonStyle())
+                    .targetID("handled")
+                    .id("handled")
                     .padding(.horizontal, Space.m - Space.s)
                     .padding(.top, Space.m - Space.xs)
                     if isOpen {
@@ -146,10 +150,13 @@ struct BoardView: View {
                     }
                 }
             }
+            .scrollTargetLayout()
             .padding(Space.l)
             .environment(\.arrivals, motion.arrivals)
             .animation(motion.layout, value: placements)
         }
+        .scrollPosition($scroll)
+        .onChange(of: model.hoveredTarget) { _, target in if target == "handled" { scroll.scrollTo(id: "handled", anchor: .center) } }
         .onAppear {
             before = placements
             primed = true
@@ -219,6 +226,7 @@ struct HandledRow: View {
     var now: Date
 
     @State private var hovering = false
+    @Environment(WindowModel.self) private var model: WindowModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xxs) {
@@ -254,7 +262,7 @@ struct HandledRow: View {
         .padding(.vertical, Space.s)
         .padding(.horizontal, Space.m)
         .contentShape(Rectangle())
-        .onHover { hovering = $0 }
+        .onHover { hovering = $0 && (model?.pointerLive ?? true) }
         .contextMenu {
             if entry.canUndo { Button(entry.undoLabel) { Task { await store.undoHandled(entry.id) } } }
         }
