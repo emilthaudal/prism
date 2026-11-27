@@ -376,6 +376,8 @@ struct QuestionCard: View {
                 .strokeBorder(.tint, lineWidth: 1.5)
                 .opacity(selected ? 1 : 0)
                 .animation(Motion.fades(Motion.settle, reduce: reduce), value: selected)
+                // Only the opacity animates: the ring's size follows the card, which jumps under Reduce Motion.
+                .geometryGroup()
         }
     }
 }

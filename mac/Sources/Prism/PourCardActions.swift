@@ -15,6 +15,13 @@ struct PourCardActions: View {
         !q.options.isEmpty && store.stagedChoice(for: q.id) == nil && store.answers.batch(containing: q.id) == nil && !store.stagesAnswer(to: q)
     }
 
+    /// A capsule's text keeps at least its corner radius, half the capsule's height, from the glass edge.
+    static let capsuleInset = Space.l
+
+    /// The capsules' names for a demo script's hover and press.
+    static func optionTarget(_ question: String, _ index: Int) -> String { "card-option:\(question):\(index)" }
+    static func undoTarget(_ question: String) -> String { "card-undo:\(question)" }
+
     var body: some View {
         let pending = store.answers.pending(for: question.id)
         let picked: Int? = { if let pending, case .option(let n) = pending.choice { return n } else { return nil } }()
@@ -30,7 +37,7 @@ struct PourCardActions: View {
                     HStack(spacing: Space.s) {
                         CountdownLine(deadline: pending.deadline, now: store.now) { "Sending in \($0) s" }
                             .font(.callout)
-                            .padding(.horizontal, Space.m)
+                            .padding(.horizontal, Self.capsuleInset)
                             .frame(height: Space.xxl)
                             .glassEffect(.regular, in: Capsule())
                             .glassEffectID("option\(picked ?? 0)", in: ns)
@@ -38,11 +45,12 @@ struct PourCardActions: View {
                         Button { store.undo(question.id) } label: {
                             HStack(spacing: Space.s) { Text("Undo"); KeyHint(text: "z") }
                                 .font(.callout)
-                                .padding(.horizontal, Space.m)
+                                .padding(.horizontal, Self.capsuleInset)
                                 .frame(height: Space.xxl)
                                 .contentShape(Capsule())
                         }
                         .buttonStyle(.plain)
+                        .modifier(ScriptedTint(id: Self.undoTarget(question.id), shape: Capsule()))
                         .glassEffect(.regular.interactive(), in: Capsule())
                         .glassEffectID("undo", in: ns)
                     }
@@ -52,6 +60,7 @@ struct PourCardActions: View {
                             Button { store.answer(question.id, choice: .option(i)) } label: { label(i, option).contentShape(Capsule()) }
                                 .buttonStyle(.plain)
                                 .help(option.description ?? "")
+                                .modifier(ScriptedTint(id: Self.optionTarget(question.id, i), shape: Capsule()))
                                 .glassEffect(.regular.interactive(), in: Capsule())
                                 .glassEffectID("option\(i)", in: ns)
                         }
@@ -69,7 +78,7 @@ struct PourCardActions: View {
         return Text(recommended ? "\u{2605} \(option.label)" : option.label)
             .font(.callout.weight(recommended ? .semibold : .regular))
             .lineLimit(1)
-            .padding(.horizontal, Space.m)
+            .padding(.horizontal, Self.capsuleInset)
             .frame(height: Space.xxl)
     }
 }

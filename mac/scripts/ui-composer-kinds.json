@@ -1,0 +1,50 @@
+{
+  "lead": 1.5,
+  "tail": 0.5,
+  "ui": { "tolerance": 4, "threshold": 0.002, "shift": 1, "masks": [] },
+  "steps": [
+    {
+      "name": "picture choice",
+      "at": 0, "do": "pick", "question": "D16",
+      "shot": "kinds-picture"
+    },
+    {
+      "name": "picture choice, answered",
+      "at": 2, "do": "answer", "question": "D16", "option": 2,
+      "shot": "kinds-picture-pill"
+    },
+    {
+      "name": "picture choice, undone",
+      "at": 3.4, "do": "undo", "question": "D16"
+    },
+    {
+      "name": "picture choice, Ask for more",
+      "at": 4, "do": "focus", "field": "ask",
+      "shot": "kinds-picture-ask"
+    },
+    {
+      "name": "no options",
+      "at": 6, "do": "pick", "question": "D19",
+      "shot": "kinds-no-options"
+    },
+    {
+      "name": "no options, Ask for more",
+      "at": 8, "do": "focus", "field": "ask",
+      "shot": "kinds-no-options-ask"
+    },
+    {
+      "name": "no options, a recommendation in words",
+      "at": 10, "do": "pick", "question": "D20",
+      "shot": "kinds-recommendation"
+    },
+    {
+      "name": "options, Ask for more",
+      "at": 12, "do": "pick", "question": "D14"
+    },
+    {
+      "name": "options, Ask for more asked",
+      "at": 12.5, "do": "focus", "field": "ask",
+      "shot": "kinds-options-ask"
+    }
+  ]
+}
