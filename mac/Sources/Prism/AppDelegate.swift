@@ -226,8 +226,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         // ⇧⌘L is the menu's Run Overnight, not ⌘L.
         if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
-        if model.labShown, flags == .option, let n = Int(key.characters), Lab.choices.indices.contains(n - 1) {
-            model.lab.step(n - 1)
+        if model.labShown, flags == .option, let n = Int(key.characters), let i = Lab.choices.firstIndex(where: { $0.number == n }) {
+            model.lab.step(i)
             return true
         }
         let editing = window?.firstResponder is NSTextView
