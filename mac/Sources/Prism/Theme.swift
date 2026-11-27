@@ -235,7 +235,7 @@ extension Font {
 extension View {
     /// The window's title bar is transparent, so a scrolling message would print through the title; the scroll view
     /// shows only what is below the title.
-    func scrollsBelowTitle() -> some View { mask(Rectangle()) }
+    func scrollsBelowTitle() -> some View { modifier(TitleEdge()) }
 
     /// Plain text in the conversation column: shapes sit Space.m in, text Space.xxl, so text is Space.l inside the shapes' edge.
     func conversationText() -> some View { padding(.horizontal, Space.l) }

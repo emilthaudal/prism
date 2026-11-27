@@ -76,6 +76,7 @@ struct MiddleColumn: View {
 
     var body: some View {
         VStack(spacing: Space.none) {
+            if model.labShown { LabPicker(model: model) }
             if case .offline(let why) = store.connection {
                 ConnectionBanner(text: why)
             }

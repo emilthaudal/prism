@@ -20,6 +20,8 @@ struct LaunchOptions {
     var demoPick: Int?
     /// Fixture captures only: a window with the sidebar alone, off the glass, so --snapshot draws its rows.
     var sidebarOnly = false
+    /// Fixture only, EMI-477 prototypes: shows the option picker, opened on these picks (see Lab).
+    var lab: Lab?
     /// Fixture only: opens the "Run overnight" sheet filled with made-up values.
     var demoOvernight = false
     /// Fixture only: plays this script's timed changes (see scripts/motion-sample.json).
@@ -49,6 +51,7 @@ struct LaunchOptions {
                 guard let n = Int(v), n >= 1 else { throw Invalid(description: "--demo-pick needs an option number from 1: \(v)") }
                 demoPick = n
             case "--sidebar-only": sidebarOnly = true
+            case "--lab": lab = try Lab(try Self.value(arg, &it))
             case "--demo-overnight": demoOvernight = true
             case "--demo-script": demoScript = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--motion-dir": motionDir = URL(fileURLWithPath: try Self.value(arg, &it))

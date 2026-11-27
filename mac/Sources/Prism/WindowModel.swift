@@ -38,6 +38,9 @@ final class WindowModel {
     /// The targets a demo script holds hovered and pressed with no pointer; views compare their own `targetID` with them.
     var hoveredTarget: String?
     var pressedTarget: String?
+    /// EMI-477 prototypes: the options picked, and whether the picker shows (--lab, fixture only).
+    var lab = Lab()
+    var labShown = false
 
     /// Shows a row pressed for a moment, as a digit key's echo.
     func flash(_ target: String) {

@@ -8,6 +8,8 @@ struct Arrivals: Equatable {
     var fresh: Set<String> = []
     /// How a row fades out as it leaves; nil leaves it to vanish.
     var leaving: Animation?
+    /// EMI-483 prototype: how far below its place a fresh row starts; 0 fades it in place.
+    var rise: CGFloat = 0
 }
 
 extension EnvironmentValues {
@@ -28,6 +30,8 @@ private struct Arrives: ViewModifier {
     func body(content: Content) -> some View {
         let hidden = arrivals.fade != nil && arrivals.fresh.contains(id) && !shown
         content
+            .offset(y: hidden ? arrivals.rise : 0)
+            .animation(arrivals.rise > 0 ? Motion.arrive : nil, value: hidden)
             .opacity(hidden ? 0 : 1)
             .animation(arrivals.fade, value: hidden)
             .onAppear {
@@ -49,6 +53,7 @@ struct ArrivalScroll<Content: View>: View {
     @ViewBuilder var content: Content
 
     @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(WindowModel.self) private var model: WindowModel?
     /// The ids as of the last change, and what that change added: a lazy row realized after it still fades in.
     @State private var before: [String] = []
     @State private var recent: Set<String> = []
@@ -59,7 +64,7 @@ struct ArrivalScroll<Content: View>: View {
     var body: some View {
         let animate = windowVisible && pinned && !before.isEmpty
         ScrollView {
-            content.environment(\.arrivals, Arrivals(fade: animate ? Motion.fade : nil, fresh: Set(ids).subtracting(before).union(recent)))
+            content.environment(\.arrivals, Arrivals(fade: animate ? Motion.fade : nil, fresh: Set(ids).subtracting(before).union(recent), rise: model?.lab.option("arrive") == "rise" && !reduce ? Space.l : 0))
         }
         .scrollPosition($position)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
