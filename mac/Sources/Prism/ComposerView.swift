@@ -297,7 +297,7 @@ struct QuestionComposer: View {
                             }
                         }
                     }
-                } else {
+                } else if !question.options.isEmpty {
                     VStack(spacing: Space.xxs) {
                         ForEach(Array(question.options.enumerated()), id: \.offset) { i, option in
                             OptionRow(question: question, index: i, option: option, recommended: i == question.recommendedIndex, staged: stagedChoice == .option(i), otherStaged: stagedChoice != nil && stagedChoice != .option(i), showsKey: keyed) {
@@ -324,7 +324,7 @@ struct QuestionComposer: View {
                     .padding(.horizontal, Space.s)
                     .padding(.top, Space.xs)
                     .focusOnTap(focus, .answer)
-                    if store.canAsk(question) { askRow }
+                    if store.canAsk(question) { askRow.padding(.horizontal, Space.s) }
                 }
                 if model.askingAbout == question.id { askField }
                 if !embedded { StagedBar(store: store, dialog: question.dialog).padding(.horizontal, Space.s) }
@@ -359,7 +359,6 @@ struct QuestionComposer: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, Space.s)
     }
 
     private var askField: some View {
@@ -410,7 +409,6 @@ struct LinkRow: View {
                     .controlSize(.small)
                     .help(url.absoluteString)
                 }
-                Spacer(minLength: 0)
             }
         }
     }
@@ -473,6 +471,7 @@ struct AnswerRow: View {
                     HStack(spacing: Space.s) { Text("Undo"); KeyHint(text: "z") }
                 }
                 .buttonStyle(.bordered)
+                .modifier(ScriptedTint(id: Self.undoTarget(question.id), shape: RoundedRectangle(cornerRadius: Space.s, style: .continuous)))
             } else {
                 Button(action: answerInWords) {
                     // A long option name gives way; the return mark never does.
@@ -491,6 +490,9 @@ struct AnswerRow: View {
         .focusOnTap(focus, .answer)
         .environment(\.keysLive, focus.wrappedValue == nil)
     }
+
+    /// The Undo button's name for a demo script's hover and press.
+    static func undoTarget(_ question: String) -> String { "undo:\(question)" }
 
     /// What one send does: the typed answer, else the staged or recommended option, named so the button says what it sends.
     private func sendLabel(stagedChoice: AnswerChoice?) -> String {
@@ -596,7 +598,11 @@ struct VisualOptionCard: View {
                 HStack(spacing: Space.s) {
                     Image(systemName: staged ? "checkmark.circle.fill" : (recommended && !otherStaged ? "largecircle.fill.circle" : "circle"))
                         .foregroundStyle(staged || (recommended && !otherStaged) ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                    Text(option.label).lineLimit(2).multilineTextAlignment(.leading)
+                    // Two lines of room for every card, so a one-line name doesn't make its card shorter than its neighbours.
+                    ZStack(alignment: .leading) {
+                        Text(" ").lineLimit(2, reservesSpace: true).hidden()
+                        Text(option.label).lineLimit(2).multilineTextAlignment(.leading)
+                    }
                     Spacer(minLength: 0)
                     KeyHint(text: "\(index + 1)")
                 }

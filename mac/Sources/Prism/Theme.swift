@@ -589,6 +589,20 @@ struct ScriptedShade: ViewModifier {
     }
 }
 
+/// The hover and pressed shade of a control the system draws and an app can't set (a bordered button, interactive glass),
+/// shown only while a demo script holds its target, so a still can show the state. A pointer on the real control draws
+/// the control's own.
+struct ScriptedTint<S: Shape>: ViewModifier {
+    var id: String
+    var shape: S
+    @Environment(WindowModel.self) private var model: WindowModel?
+
+    func body(content: Content) -> some View {
+        let shade = model?.pressedTarget == id ? 0.09 : (model?.hoveredTarget == id ? 0.05 : 0)
+        content.overlay { shape.fill(Color.primary.opacity(shade)).allowsHitTesting(false) }
+    }
+}
+
 /// A keyboard shortcut hint.
 struct KeyHint: View {
     var text: String

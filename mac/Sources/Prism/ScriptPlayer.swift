@@ -118,7 +118,10 @@ final class ScriptPlayer: NSObject {
             switch field {
             case "desk": model.requestFocus(.desk)
             case "answer": model.requestFocus(.answer)
-            case "ask": model.requestFocus(.ask)
+            case "ask":
+                // The ask field shows once the question is asked about, as the m key does.
+                model.askingAbout = model.activeQuestion(in: store.snapshot)?.id
+                model.requestFocus(.ask)
             default: FileHandle.standardError.write(Data("prism: unknown field \(field)\n".utf8))
             }
         case .select(let item): model.selection = Self.selection(item)

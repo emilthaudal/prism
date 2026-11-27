@@ -73,6 +73,7 @@ struct DeskWindow: View {
 struct MiddleColumn: View {
     var store: DeskStore
     var model: WindowModel
+    @Environment(\.accessibilityReduceMotion) private var reduce
 
     var body: some View {
         VStack(spacing: Space.none) {
@@ -100,14 +101,21 @@ struct MiddleColumn: View {
                 notice
                 TrackSummaryView(track: track, now: store.now)
             } else {
-                ChatView(store: store, model: model)
-                    .dropReceiver { model.attach($0) }
-                // In the column's flow right above the composer, never over it: the composer grows
-                // with a question's options, and an overlay at a fixed height covered them.
-                notice
-                ComposerView(store: store, model: model)
-                    .layoutPriority(1)
-                    .dropReceiver { model.attach($0) }
+                if reduce {
+                    // Nothing eases, so the composer is the chat's bottom inset: a height jump moves the messages in
+                    // the same layout pass. Below it the chat follows the composer's height frame by frame, which at a
+                    // jump showed one frame with the composer changed and the messages not yet.
+                    ChatView(store: store, model: model)
+                        .dropReceiver { model.attach($0) }
+                        .safeAreaInset(edge: .bottom, spacing: Space.none) { composer }
+                        .scrollEdgeEffectStyle(.soft, for: .bottom)
+                } else {
+                    ChatView(store: store, model: model)
+                        .dropReceiver { model.attach($0) }
+                    // In the column's flow right above the composer, never over it: the composer grows
+                    // with a question's options, and an overlay at a fixed height covered them.
+                    composer.layoutPriority(1)
+                }
             }
         }
         .animation(Motion.fade, value: store.notice)
@@ -122,6 +130,14 @@ struct MiddleColumn: View {
 }
 
 extension MiddleColumn {
+    private var composer: some View {
+        VStack(spacing: Space.none) {
+            notice
+            ComposerView(store: store, model: model)
+                .dropReceiver { model.attach($0) }
+        }
+    }
+
     @ViewBuilder var notice: some View {
         if let notice = store.notice {
             NoticeView(notice: notice) { store.notice = nil }
