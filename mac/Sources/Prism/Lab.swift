@@ -22,10 +22,6 @@ struct Lab: Equatable {
             "No box. A report is text on the paper like Prism's own, told apart by its dot and name; glass is left to what you act on.",
             "Each report is a piece of glass. It scrolls under the composer's glass.",
         ]),
-        Choice(number: 3, surface: "Conversation", key: "arrive", title: "Arrivals", options: ["fade", "rise"], notes: [
-            "Today: a new entry fades in where it lands.",
-            "A new entry comes up from the composer's edge as it fades in; your own message grows out of the field's corner.",
-        ]),
         Choice(number: 5, surface: "Sidebar", key: "marks", title: "Status marks", options: ["dots", "shapes"], notes: [
             "Today: finished, idle, a question and blocked are dots of one shape, told apart by colour.",
             "Each state has its own shape, drawn like the dot: a ring once seen, a short bar for idle, the board's diamond for what needs you.",
