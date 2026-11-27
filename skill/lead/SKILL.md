@@ -54,7 +54,7 @@ Emil's desk, the agent Emil talks to that watches all his tracks, may also send 
 
 Threads stop at a commit or an open PR and never merge, install or deploy, whatever their tier, so that nothing ships before you have checked it. Once you have, merging, installing and deploying are yours to do or to ask Emil for, by your own card's tier.
 
-When a part is done and checked, close its thread with `tracks close THREAD`. The thread exists only for your goal, and closing it frees a place under the cap.
+When a part is done and checked, and its branch is merged, remove the thread's worktree as the track skill's Cleaning up says, then close its thread with `tracks close THREAD`. The thread exists only for your goal, and closing it frees a place under the cap.
 
 ## What reaches Emil
 
