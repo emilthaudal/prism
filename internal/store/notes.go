@@ -159,6 +159,77 @@ func (s *Store) ReleaseNote(id int64) error {
 	})
 }
 
+// DropNote deletes the held note of a session the desk owns, by hand, and logs it; n is how many
+// notes it removed (0 when none was held). A claimed or delivered note stays.
+func (s *Store) DropNote(session string) (n int, err error) {
+	if s.stale {
+		return 0, ErrStale
+	}
+	err = s.tx(func(tx *wtx) error {
+		var owner string
+		if err := tx.QueryRow(`SELECT owner FROM sessions WHERE id = ?`, session).Scan(&owner); err != nil {
+			return err
+		}
+		if owner != "desk" {
+			return ErrEmils
+		}
+		n, err = dropHeld(tx, `session_id = ?`, s.now(), "drop", session)
+		return err
+	})
+	return n, err
+}
+
+// dropHeld deletes the held notes that where selects, and logs one note_drop event per track
+// with kind why. A session with no track logs none.
+func dropHeld(tx *wtx, where string, at time.Time, why string, args ...any) (int, error) {
+	rows, err := tx.Query(`SELECT m.id, COALESCE(t.id, 0), COALESCE(t.name, ''), length(m.text) FROM messages m
+		JOIN sessions s ON s.id = m.session_id LEFT JOIN tracks t ON t.id = s.track_id
+		WHERE m.kind = 'note' AND m.held = 1 AND m.delivered_at IS NULL AND m.`+where, args...)
+	if err != nil {
+		return 0, err
+	}
+	var ids []int64
+	var evs []Event
+	for rows.Next() {
+		var id int64
+		e := Event{At: at, Event: "note_drop", Kind: why}
+		if err := rows.Scan(&id, &e.TrackID, &e.TrackName, &e.Len); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		ids = append(ids, id)
+		evs = append(evs, e)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, err
+	}
+	rows.Close()
+	for i, id := range ids {
+		if _, err := tx.Exec(`DELETE FROM messages WHERE id = ?`, id); err != nil {
+			return 0, err
+		}
+		if err := logEvent(tx, evs[i]); err != nil {
+			return 0, err
+		}
+	}
+	return len(ids), nil
+}
+
+// DropClosedNotes deletes the held notes of sessions whose track is closed, which no session
+// takes: delivering one fails at every stop. It returns how many it removed.
+func (s *Store) DropClosedNotes() (n int, err error) {
+	if s.stale {
+		return 0, ErrStale
+	}
+	err = s.tx(func(tx *wtx) error {
+		n, err = dropHeld(tx, `session_id IN (SELECT s.id FROM sessions s JOIN tracks t ON t.id = s.track_id
+			WHERE s.owner = 'desk' AND t.closed_at IS NOT NULL)`, s.now(), "closed")
+		return err
+	})
+	return n, err
+}
+
 // NotedSessions are the sessions a note was delivered to at or after since: delivering stops
 // and resumes them. A session's first note is its start prompt, which stopped nothing.
 func (s *Store) NotedSessions(since time.Time) (map[string]bool, error) {

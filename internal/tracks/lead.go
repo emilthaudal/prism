@@ -17,7 +17,7 @@ import (
 
 const (
 	spawnUsage = `usage: tracks spawn LEAD "task" --dir D [--model sonnet|opus] [--verify CMD]`
-	sendUsage  = "usage: tracks send TARGET \"text\" [--replace] [--now]\n       tracks send TRACK \"text\" [--from LEAD]"
+	sendUsage  = "usage: tracks send TARGET \"text\" [--replace] [--now]\n       tracks send TARGET --drop\n       tracks send TRACK \"text\" [--from LEAD]"
 	waitUsage  = "usage: tracks wait LEAD [--timeout D]\n       tracks wait --all [--follow] [--timeout D] [--idle D]\n       tracks wait --desk [--follow] [--timeout D]"
 
 	needsStore   = "needs tracks.db: run tracks migrate first"
@@ -279,8 +279,21 @@ func sendRefusal(child, from, callerSession string) (lead string, why string) {
 // text typed into a thread's agent by its parent, or [desk] text typed into any open track's
 // agent by the desk, only while Rex says the agent is idle or done.
 func sendCmd(args []string, out io.Writer) error {
-	replace, now := slices.Contains(args, "--replace"), slices.Contains(args, "--now")
-	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--replace" || a == "--now" })
+	replace, now, drop := slices.Contains(args, "--replace"), slices.Contains(args, "--now"), slices.Contains(args, "--drop")
+	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--replace" || a == "--now" || a == "--drop" })
+	if drop {
+		if replace || now || len(args) != 1 || !storeOn() {
+			return errors.New(sendUsage)
+		}
+		s, ok, err := deskTarget(args[0])
+		switch {
+		case err != nil:
+			return err
+		case !ok:
+			return fmt.Errorf("no session the desk started matches %q", args[0])
+		}
+		return deskDropCmd(s, out)
+	}
 	pos, fl, err := leadFlags(args, "--from")
 	if err != nil || len(pos) != 2 {
 		return errors.New(sendUsage)
