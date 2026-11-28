@@ -180,7 +180,7 @@ func (s *Store) DropNote(session string) (n int, err error) {
 }
 
 // dropHeld deletes the held notes that where selects, and logs one note_drop event per track
-// with kind why. A session with no track logs none.
+// with kind why; a session with no track logs one with no track.
 func dropHeld(tx *wtx, where string, at time.Time, why string, args ...any) (int, error) {
 	rows, err := tx.Query(`SELECT m.id, COALESCE(t.id, 0), COALESCE(t.name, ''), length(m.text) FROM messages m
 		JOIN sessions s ON s.id = m.session_id LEFT JOIN tracks t ON t.id = s.track_id
