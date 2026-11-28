@@ -143,6 +143,8 @@ func TestPRStateFromGhJSON(t *testing.T) {
 		{"OPEN", "", []rollupItem{{Status: "COMPLETED", Conclusion: "SUCCESS", Name: "build"}}, "green"},
 		{"OPEN", "", []rollupItem{{Status: "COMPLETED", Conclusion: "FAILURE", Name: "build"}}, "open"},
 		{"OPEN", "", nil, "open"},
+		{"OPEN", "", []rollupItem{{Status: "IN_PROGRESS", Name: "build"}}, ""},
+		{"OPEN", "APPROVED", []rollupItem{{Status: "IN_PROGRESS", Name: "build"}}, "approved"},
 	}
 	for _, c := range cases {
 		if got := prState(c.state, c.review, c.rollup); got != c.want {

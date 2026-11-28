@@ -115,7 +115,8 @@ func judgeGreen(items []rollupItem) string {
 }
 
 // prState is where a PR is on its way: merged and closed end it, an approved review beats green
-// checks, and anything else is open.
+// checks, and anything else is open. While its checks still run it is "", so the last state
+// stands and a CI re-run on a green PR doesn't wake the session twice.
 func prState(state, review string, rollup []rollupItem) string {
 	switch {
 	case state == "MERGED":
@@ -124,8 +125,14 @@ func prState(state, review string, rollup []rollupItem) string {
 		return store.PRClosed
 	case review == "APPROVED":
 		return store.PRApproved
-	case judgeGreen(rollup) == yes:
+	}
+	switch judgeGreen(rollup) {
+	case yes:
 		return store.PRGreen
+	case pending:
+		if len(rollup) > 0 {
+			return ""
+		}
 	}
 	return store.PROpen
 }

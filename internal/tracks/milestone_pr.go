@@ -40,6 +40,10 @@ func refreshMilestones(st *store.Store, dry bool, eval evaluator, out, errw io.W
 			fmt.Fprintf(errw, "%s: milestone %d %q: %s: %v\n", w.Track, w.Position, w.Title, w.PR, err)
 			continue
 		}
+		if state == "" {
+			fmt.Fprintf(out, "%s: milestone %d %s checks still running, kept\n", w.Track, w.Position, w.PR)
+			continue
+		}
 		if state == w.PRState {
 			fmt.Fprintf(out, "%s: milestone %d %s is %s, unchanged\n", w.Track, w.Position, w.PR, state)
 			continue
