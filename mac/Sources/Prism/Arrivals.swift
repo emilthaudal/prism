@@ -69,8 +69,9 @@ struct ArrivalScroll<Content: View>: View {
     @State private var pinned = true
     @State private var userScrolling = false
     @State private var position = ScrollPosition()
-    /// The first entry on screen, so a jump knows which side it comes from.
-    @State private var topVisible: String?
+    /// How far down the content the view's top edge is, 0 to 1, so a jump knows which side it comes from. Read from the
+    /// geometry, not scroll targets: a lazy stack laid out as scroll targets kept every row the 200-entry cap dropped.
+    @State private var topFraction: Double?
 
     var body: some View {
         let animate = windowVisible && pinned && !before.isEmpty
@@ -100,10 +101,12 @@ struct ArrivalScroll<Content: View>: View {
             recent = animate ? Set(new).subtracting(old) : []
             before = new
         }
-        .onScrollTargetVisibilityChange(idType: String.self) { topVisible = $0.first }
+        .onScrollGeometryChange(for: Double.self) { $0.contentSize.height > 0 ? $0.visibleRect.minY / $0.contentSize.height : 0 } action: { _, top in
+            topFraction = top
+        }
         .onChange(of: jumpRequest) { _, request in
             guard let request else { return }
-            let from = pinned ? ids.count - 1 : topVisible.flatMap { ids.firstIndex(of: $0) }
+            let from = pinned ? ids.count - 1 : topIndex
             pinned = false
             settle(from: from, to: ids.firstIndex(of: request.entry)) { position.scrollTo(id: request.entry, anchor: .top) }
         }
@@ -117,12 +120,17 @@ struct ArrivalScroll<Content: View>: View {
                 pinned = true
                 position.scrollTo(edge: .bottom)
             case "latest":
-                let from = pinned ? ids.count - 1 : topVisible.flatMap { ids.firstIndex(of: $0) }
+                let from = pinned ? ids.count - 1 : topIndex
                 pinned = true
                 settle(from: from, to: ids.count - 1) { position.scrollTo(edge: .bottom) }
             default: break
             }
         }
+    }
+
+    /// The entry at the view's top edge, estimated from how far down the content it is.
+    private var topIndex: Int? {
+        topFraction.map { min(max(Int($0 * Double(ids.count)), 0), max(ids.count - 1, 0)) }
     }
 
     /// Animates `scroll` with the settle token, first skipping to within `Settle.run` entries of `to` when it is farther

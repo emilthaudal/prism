@@ -58,8 +58,6 @@ struct ChatView: View {
                     .arrives(entry.id)
                 }
             }
-            // Each entry is a place a jump can land.
-            .scrollTargetLayout()
             .padding(.horizontal, Space.m)
             .padding(.vertical, Space.xl)
             .frame(maxWidth: Theme.chatMaxWidth)
