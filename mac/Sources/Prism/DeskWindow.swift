@@ -77,7 +77,6 @@ struct MiddleColumn: View {
 
     var body: some View {
         VStack(spacing: Space.none) {
-            if model.noticeLabShown { NoticeLabPicker(model: model) }
             if case .offline(let why) = store.connection {
                 ConnectionBanner(text: why)
             }
@@ -144,8 +143,6 @@ extension MiddleColumn {
             Group {
                 if !notice.isQuiet {
                     NoticeView(notice: notice) { store.notice = nil }
-                } else if model.noticeStyle == .banner {
-                    NoticeBanner(notice: notice) { store.notice = nil }
                 } else {
                     NoticeToast(notice: notice) { store.notice = nil }
                 }
@@ -156,9 +153,9 @@ extension MiddleColumn {
         }
     }
 
-    /// In the card style a notice about the decision on the composer's card is a line in that card instead.
+    /// A notice about the decision on the composer's card is a line in that card instead.
     private func shownInCard(_ notice: Notice) -> Bool {
-        model.noticeStyle == .card && notice.isQuiet && notice.questionID != nil && notice.questionID == model.keyedQuestion(store)?.id
+        notice.isQuiet && notice.questionID != nil && notice.questionID == model.keyedQuestion(store)?.id
     }
 }
 

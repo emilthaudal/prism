@@ -270,7 +270,7 @@ struct QuestionComposer: View {
                 }
             }
             .padding(.horizontal, Space.s)
-            if model.noticeStyle == .card, let notice = store.notice, notice.isQuiet, notice.questionID == question.id {
+            if let notice = store.notice, notice.isQuiet, notice.questionID == question.id {
                 AskedLine(track: question.track.flatMap { store.snapshot.track($0)?.name } ?? question.id)
                     .padding(.horizontal, Space.s)
             }

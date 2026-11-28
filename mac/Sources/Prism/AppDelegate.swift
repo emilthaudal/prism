@@ -90,10 +90,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.overnightShown = true
         }
         if options.demoWhole, fixture != nil { QuestionTextView.opensWhole = true }
-        if let style = options.noticeLab, fixture != nil {
-            model.noticeStyle = style
-            model.noticeLabShown = true
-        }
         if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil || options.demoNotice { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
@@ -237,10 +233,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let editing = window?.firstResponder is NSTextView
         // The arrow keys carry the function and keypad flags of their own.
         if flags.subtracting([.numericPad, .function]) == .option {
-            if model.noticeLabShown, key.characters == "1" {
-                model.noticeStyle = model.noticeStyle.next
-                return true
-            }
             // In a message being typed the arrows keep moving the cursor.
             let typing = editing && !model.draft.isEmpty
             if [125, 126].contains(event.keyCode), !typing, model.session(in: store.snapshot) == nil {
