@@ -50,6 +50,9 @@ struct ArrivalScroll<Content: View>: View {
     var ids: [String]
     var scrollRequest: WindowModel.ScrollRequest?
     var windowVisible: Bool
+    /// An entry to bring to the top, and a note when the view comes back to the bottom.
+    var jumpRequest: WindowModel.JumpRequest? = nil
+    var backAtBottom: () -> Void = {}
     @ViewBuilder var content: Content
 
     @Environment(\.accessibilityReduceMotion) private var reduce
@@ -88,6 +91,12 @@ struct ArrivalScroll<Content: View>: View {
             recent = animate ? Set(new).subtracting(old) : []
             before = new
         }
+        .onChange(of: jumpRequest) { _, request in
+            guard let request else { return }
+            pinned = false
+            withAnimation(Motion.moves(Motion.settle, reduce: reduce)) { position.scrollTo(id: request.entry, anchor: .top) }
+        }
+        .onChange(of: pinned) { _, now in if now { backAtBottom() } }
         .onChange(of: scrollRequest) { _, request in
             switch request?.direction {
             case "up":

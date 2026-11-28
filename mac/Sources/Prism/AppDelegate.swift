@@ -224,6 +224,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ⇧⌘L is the menu's Run Overnight, not ⌘L.
         if flags.contains([.command, .shift]), key.characters.lowercased() == "l" { return false }
         let editing = window?.firstResponder is NSTextView
+        // The arrow keys carry the function and keypad flags of their own.
+        if flags.subtracting([.numericPad, .function]) == .option {
+            // In a message being typed the arrows keep moving the cursor.
+            let typing = editing && !model.draft.isEmpty
+            if [125, 126].contains(event.keyCode), !typing, model.session(in: store.snapshot) == nil {
+                model.stepAsked(event.keyCode == 126 ? -1 : 1, in: store.snapshot)
+                return true
+            }
+        }
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.
         if command == .sendStaged, editing, !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }

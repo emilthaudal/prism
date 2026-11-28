@@ -505,6 +505,35 @@
   "questions": [],
   "conversation": [
     {
+      "id": "m66",
+      "at": "2026-11-24T11:48:00Z",
+      "role": "emil",
+      "text": "start a track for the image budget, background is fine"
+    },
+    {
+      "id": "m67",
+      "at": "2026-11-24T11:49:00Z",
+      "role": "desk",
+      "steps": 4,
+      "text": "Started image-budget in Background. Its first check is `make sizes` on the product pages."
+    },
+    {
+      "id": "m68",
+      "at": "2026-11-24T12:05:00Z",
+      "role": "report",
+      "session": "b2c3d4e5-2a3b-4c4d-8e5f-7a8b9c0d1eb2",
+      "outcome": "done",
+      "text": "Baseline measured: product pages carry 612 KB of images, 38 of them over 60 KB."
+    },
+    {
+      "id": "m69",
+      "at": "2026-11-24T12:18:00Z",
+      "role": "report",
+      "session": "a1b2c3d4-1f2a-4b3c-9d4e-6f7a8b9c0da1",
+      "outcome": "done",
+      "text": "The bench set is in place: 400 queries, p95 131 ms on main."
+    },
+    {
       "id": "m70",
       "at": "2026-11-24T12:31:00Z",
       "role": "emil",
@@ -576,6 +605,22 @@
       "role": "desk",
       "steps": 2,
       "text": "Nothing needs you. I open the queue-api PR next unless you say no."
+    },
+    {
+      "id": "m80",
+      "at": "2026-11-24T13:29:00Z",
+      "role": "report",
+      "session": "b25e44d1-7c8d-4e9f-8a1b-2c3d4e5f6a72",
+      "outcome": "done",
+      "text": "The PR text is written. Waiting for the go-ahead to open it."
+    },
+    {
+      "id": "m81",
+      "at": "2026-11-24T13:31:00Z",
+      "role": "report",
+      "session": "e0c7a913-8d9e-4f0a-9b2c-3d4e5f6a7b83",
+      "outcome": "done",
+      "text": "bun install works. Two scripts still call npm."
     }
   ],
   "handled": [

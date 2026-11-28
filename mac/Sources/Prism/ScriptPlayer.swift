@@ -127,6 +127,15 @@ final class ScriptPlayer: NSObject {
         case .select(let item): model.selection = Self.selection(item)
         case .dismiss: model.dismissQuestion()
         case .draft(let text): model.draft = text
+        case .jump(let entry):
+            // A board row lands on the question and shades its answer; a mark lands on the message alone.
+            if let row = Answers.replies(store.snapshot.conversation).first(where: { $0.id == entry }) {
+                model.jump(to: row.anchor, landing: row.id)
+            } else {
+                model.askedCursor = entry
+                model.jump(to: entry)
+            }
+        case .keep(let entry): model.toggleKept(entry)
         case .wait: break
         }
     }
