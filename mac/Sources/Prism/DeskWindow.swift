@@ -77,6 +77,7 @@ struct MiddleColumn: View {
 
     var body: some View {
         VStack(spacing: Space.none) {
+            if model.noticeLabShown { NoticeLabPicker(model: model) }
             if case .offline(let why) = store.connection {
                 ConnectionBanner(text: why)
             }
@@ -139,12 +140,25 @@ extension MiddleColumn {
     }
 
     @ViewBuilder var notice: some View {
-        if let notice = store.notice {
-            NoticeView(notice: notice) { store.notice = nil }
-                .padding(.horizontal, Space.l)
-                .padding(.top, Space.s)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+        if let notice = store.notice, !shownInCard(notice) {
+            Group {
+                if !notice.isQuiet {
+                    NoticeView(notice: notice) { store.notice = nil }
+                } else if model.noticeStyle == .banner {
+                    NoticeBanner(notice: notice) { store.notice = nil }
+                } else {
+                    NoticeToast(notice: notice) { store.notice = nil }
+                }
+            }
+            .padding(.horizontal, Space.l)
+            .padding(.top, Space.s)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+    }
+
+    /// In the card style a notice about the decision on the composer's card is a line in that card instead.
+    private func shownInCard(_ notice: Notice) -> Bool {
+        model.noticeStyle == .card && notice.isQuiet && notice.questionID != nil && notice.questionID == model.keyedQuestion(store)?.id
     }
 }
 

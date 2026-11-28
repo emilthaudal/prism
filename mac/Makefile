@@ -10,7 +10,7 @@ MOTION_OUT ?= build/motion
 UI_SCRIPT ?= scripts/ui-sample.json
 UI_OUT ?= build/ui
 
-.PHONY: build test app icon install run demo shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
+.PHONY: build test app icon install run demo lab ask-shots shots readme-shots motion motion-arrive motion-composer ui-check ui-baseline stress clean
 
 build:
 	swift build
@@ -61,6 +61,17 @@ run: app
 # Runs the app on the fixture, actions applied in memory; no tracks serve needed.
 demo: app
 	open -n $(APP) --args --fixture "$(abspath $(FIXTURE))"
+
+# EMI-500 prototypes: a long agent ask (D19) on the composer with the notice picker over the conversation (⌥1 steps
+# banner, toast, in the card). LAB=notice=toast opens on that style.
+ASK_FIXTURE ?= ../mock/serve-fixture-ask.json
+lab: app
+	open -n $(APP) --args --fixture "$(abspath $(ASK_FIXTURE))" --select D19 --lab "$(or $(LAB),on)"
+
+# The long ask and each notice style, light and dark, captured in the background into ASK_OUT.
+ASK_OUT ?= build/ask-shots
+ask-shots: app
+	ONLY=ask scripts/shots.sh "$(abspath $(ASK_FIXTURE))" "$(abspath $(ASK_OUT))"
 
 # Captures the window from the fixture in light and dark into docs/, in the background (see scripts/shots.sh).
 shots: app

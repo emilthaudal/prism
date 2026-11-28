@@ -1,0 +1,615 @@
+{
+  "seq": 1042,
+  "generated_at": "2026-11-24T13:32:00Z",
+  "desk": {
+    "session": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+    "status": "idle",
+    "queued_events": 0,
+    "usage": {
+      "five_hour": {
+        "used_percentage": 42,
+        "resets_at": "2026-11-24T15:40:00Z"
+      },
+      "seven_day": {
+        "used_percentage": 18,
+        "resets_at": "2026-11-30T08:00:00Z"
+      },
+      "updated_at": "2026-11-24T13:31:00Z"
+    }
+  },
+  "tracks": [
+    {
+      "id": "114",
+      "name": "recipe-search",
+      "goal": "Refund rules in pantry-api, merged",
+      "milestones": [
+        {
+          "title": "Rules written",
+          "done": true
+        },
+        {
+          "title": "Tests green",
+          "done": true
+        },
+        {
+          "title": "PR approved",
+          "done": true
+        },
+        {
+          "title": "Merged",
+          "done": false
+        },
+        {
+          "title": "Live in staging",
+          "done": false
+        }
+      ],
+      "mode": "focus",
+      "tier": "2",
+      "rank": 1,
+      "today": "PR #418 open, CI green, approved",
+      "where": "Stopped before merging PR #418",
+      "waiting_on": "",
+      "links": [
+        "https://github.com/acme/pantry-api/pull/418"
+      ],
+      "blocked_by": [],
+      "updated_at": "2026-11-24T13:26:00Z"
+    },
+    {
+      "id": "121",
+      "name": "bun-rollout",
+      "goal": "Ship bun everywhere: one session per repo, stop at PRs",
+      "milestones": [
+        {
+          "title": "queue-api PR",
+          "done": true
+        },
+        {
+          "title": "pantry-api PR",
+          "done": false
+        },
+        {
+          "title": "app-template-node PR",
+          "done": false
+        },
+        {
+          "title": "All three merged",
+          "done": false
+        }
+      ],
+      "mode": "focus",
+      "tier": "2",
+      "rank": 2,
+      "today": "1 of 3 repos done",
+      "where": "Wave 1: build",
+      "waiting_on": "",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-24T13:31:00Z"
+    },
+    {
+      "id": "119",
+      "name": "scanner-skips-shop-api",
+      "goal": "Scanner scans skip the b2c BFF",
+      "milestones": [
+        {
+          "title": "Route found",
+          "done": true
+        },
+        {
+          "title": "Skip in the scanner client",
+          "done": true
+        },
+        {
+          "title": "Draft PR",
+          "done": false
+        },
+        {
+          "title": "Reviewed",
+          "done": false
+        },
+        {
+          "title": "Merged",
+          "done": false
+        }
+      ],
+      "mode": "focus",
+      "tier": "2",
+      "rank": 3,
+      "today": "Draft PR next",
+      "where": "Waiting on a permission prompt",
+      "waiting_on": "",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-24T13:26:00Z"
+    },
+    {
+      "id": "108",
+      "name": "weekly-brief",
+      "goal": "Weekday platform brief and dashboard findings",
+      "mode": "background",
+      "tier": "1",
+      "rank": 4,
+      "today": "Brief written",
+      "where": "Done for today",
+      "waiting_on": "",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-24T12:40:00Z"
+    },
+    {
+      "id": "102",
+      "name": "invoice-export",
+      "goal": "Carrier labels for B2B shipments",
+      "milestones": [
+        {
+          "title": "Label spec written",
+          "done": true
+        },
+        {
+          "title": "Spec reviewed by Alex",
+          "done": false
+        },
+        {
+          "title": "Labels print in staging",
+          "done": false
+        },
+        {
+          "title": "Live for B2B",
+          "done": false
+        }
+      ],
+      "mode": "waiting",
+      "tier": "2",
+      "rank": 5,
+      "today": "",
+      "where": "Alex reviews the label spec",
+      "waiting_on": "Alex",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-24T10:30:00Z"
+    },
+    {
+      "id": "097",
+      "name": "metrics-trial",
+      "goal": "Metrics trial on two services",
+      "mode": "parked",
+      "tier": "2",
+      "rank": 8,
+      "today": "",
+      "where": "Paused until the CircleCI plan is sorted",
+      "waiting_on": "",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-20T15:00:00Z"
+    },
+    {
+      "id": "093",
+      "name": "gh-stack-sync",
+      "goal": "Sync stacked branches before submit",
+      "mode": "parked",
+      "tier": "1",
+      "rank": 9,
+      "today": "",
+      "where": "Parked",
+      "waiting_on": "",
+      "links": [],
+      "blocked_by": [],
+      "updated_at": "2026-11-19T11:00:00Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "short": "c45dc3eb",
+      "track": null,
+      "parent": null,
+      "owner": "desk",
+      "host": "background",
+      "name": "desk",
+      "status": "idle",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "Two need you. I would merge #418 now and allow the draft PR.",
+      "changes": null,
+      "seen_at": "2026-11-24T13:27:00Z",
+      "updated_at": "2026-11-24T13:27:00Z"
+    },
+    {
+      "id": "7a8b070e-2c1d-4e5f-9a0b-c1d2e3f4a5b6",
+      "short": "7a8b070e",
+      "track": "114",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "background",
+      "name": "recipe-search",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "PR #418 is open, CI is green and Jordan approved. Stopped before merging.",
+      "changes": {
+        "added": 212,
+        "removed": 40,
+        "files": 6,
+        "branch": "emi-377",
+        "merged": false
+      },
+      "seen_at": "2026-11-24T13:27:00Z",
+      "updated_at": "2026-11-24T13:26:00Z"
+    },
+    {
+      "id": "3f91c2aa-6b7c-4d8e-9f0a-1b2c3d4e5f61",
+      "short": "3f91c2aa",
+      "track": "121",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "background",
+      "name": "pantry-api",
+      "status": "working",
+      "waiting_for": "",
+      "activity": "Bash: bun test --shard 2/3",
+      "subagents": [
+        {
+          "name": "PHP 8.5 delta rerun",
+          "status": "working"
+        },
+        {
+          "name": "lint sweep",
+          "status": "done"
+        },
+        {
+          "name": "",
+          "status": "done"
+        }
+      ],
+      "last_answer": "",
+      "changes": {
+        "added": 88,
+        "removed": 61,
+        "files": 9,
+        "branch": "bun/pantry-api",
+        "merged": false
+      },
+      "seen_at": null,
+      "updated_at": "2026-11-24T13:32:00Z"
+    },
+    {
+      "id": "b25e44d1-7c8d-4e9f-8a1b-2c3d4e5f6a72",
+      "short": "b25e44d1",
+      "track": "121",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "background",
+      "name": "queue-api",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "bun replaces node in the Dockerfile and CI, and bun test passes. Branch bun/queue-api.",
+      "changes": {
+        "added": 14,
+        "removed": 14,
+        "files": 2,
+        "branch": "bun/queue-api",
+        "merged": false
+      },
+      "seen_at": null,
+      "updated_at": "2026-11-24T13:21:00Z"
+    },
+    {
+      "id": "e0c7a913-8d9e-4f0a-9b2c-3d4e5f6a7b83",
+      "short": "e0c7a913",
+      "track": "121",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "stopped",
+      "name": "app-template-node",
+      "status": "idle",
+      "waiting_for": "",
+      "activity": "queued · cap 4",
+      "last_answer": "",
+      "changes": null,
+      "seen_at": null,
+      "updated_at": "2026-11-24T12:58:00Z"
+    },
+    {
+      "id": "5d6e7f80-9a0b-4c1d-8e2f-4a5b6c7d8e94",
+      "short": "5d6e7f80",
+      "track": "119",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "background",
+      "name": "scanner-skips-shop-api",
+      "status": "blocked",
+      "waiting_for": "permission prompt",
+      "activity": "gh pr create --draft --base main",
+      "last_answer": "",
+      "changes": {
+        "added": 31,
+        "removed": 4,
+        "files": 3,
+        "branch": "scanner-skip-shop-api",
+        "merged": false
+      },
+      "seen_at": null,
+      "updated_at": "2026-11-24T13:26:00Z"
+    },
+    {
+      "id": "9a1b2c3d-0e1f-4a2b-9c3d-5e6f7a8b9ca5",
+      "short": "9a1b2c3d",
+      "track": "108",
+      "parent": null,
+      "owner": "emil",
+      "host": "rex",
+      "name": "weekly-brief",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "Brief written to the Platform Program dashboard.",
+      "changes": null,
+      "seen_at": "2026-11-24T12:45:00Z",
+      "updated_at": "2026-11-24T12:40:00Z"
+    },
+    {
+      "id": "1c2d3e4f-5a6b-4c7d-8e9f-6a7b8c9d0eb6",
+      "short": "1c2d3e4f",
+      "track": "121",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "stopped",
+      "name": "deploy-bot",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "Merged.",
+      "changes": {
+        "added": 22,
+        "removed": 19,
+        "files": 3,
+        "branch": "bun/deploy-bot",
+        "merged": true
+      },
+      "seen_at": "2026-11-24T09:40:00Z",
+      "updated_at": "2026-11-24T09:38:00Z"
+    },
+    {
+      "id": "2d3e4f5a-6b7c-4d8e-9f0a-7b8c9d0e1fc7",
+      "short": "2d3e4f5a",
+      "track": "114",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "stopped",
+      "name": "recipe-search-copy",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "Merged.",
+      "changes": {
+        "added": 6,
+        "removed": 2,
+        "files": 1,
+        "branch": "emi-371-copy",
+        "merged": true
+      },
+      "seen_at": "2026-11-24T10:15:00Z",
+      "updated_at": "2026-11-24T10:12:00Z"
+    },
+    {
+      "id": "3e4f5a6b-7c8d-4e9f-8a0b-8c9d0e1f2ad8",
+      "short": "3e4f5a6b",
+      "track": "119",
+      "parent": "c45dc3eb-5f0e-4d6a-9a8e-1b2c3d4e5f60",
+      "owner": "desk",
+      "host": "stopped",
+      "name": "scanner-ignore-file",
+      "status": "done",
+      "waiting_for": "",
+      "activity": "",
+      "last_answer": "Merged.",
+      "changes": {
+        "added": 9,
+        "removed": 0,
+        "files": 1,
+        "branch": "scanner-ignore",
+        "merged": true
+      },
+      "seen_at": "2026-11-24T11:05:00Z",
+      "updated_at": "2026-11-24T11:01:00Z"
+    }
+  ],
+  "questions": [
+    {
+      "id": "D14",
+      "track": "114",
+      "session": "7a8b070e-2c1d-4e5f-9a0b-c1d2e3f4a5b6",
+      "from": "desk",
+      "question": "Merge PR #418 in pantry-api now?",
+      "options": [
+        {
+          "label": "Merge now, squash",
+          "description": "CI green · Jordan approved · +212 −40 in 6 files"
+        },
+        {
+          "label": "Wait for Alex",
+          "description": "He owns the refund rules. Back at 15:00."
+        },
+        {
+          "label": "Hold until tomorrow",
+          "description": "Ships with the 09:00 release train."
+        }
+      ],
+      "recommended": 0,
+      "evidence": [
+        {
+          "text": "CI green",
+          "source": "CircleCI #48211"
+        },
+        {
+          "text": "Approved",
+          "source": "Jordan, 12:51"
+        },
+        {
+          "text": "No code freeze",
+          "source": "Gatekeeper"
+        }
+      ],
+      "links": [
+        "https://github.com/acme/pantry-api/pull/418"
+      ],
+      "created_at": "2026-11-24T13:30:00Z",
+      "answer": null
+    },
+    {
+      "id": "D15",
+      "track": "119",
+      "session": "5d6e7f80-9a0b-4c1d-8e2f-4a5b6c7d8e94",
+      "from": "agent",
+      "question": "Run `gh pr create --draft --base main`?",
+      "options": [
+        {
+          "label": "Allow once",
+          "description": "Opens a draft PR; desk sessions stop at a PR."
+        },
+        {
+          "label": "Allow for this session",
+          "description": "Also allows later gh pr commands in this session."
+        },
+        {
+          "label": "Deny",
+          "description": "The session stops and reports."
+        }
+      ],
+      "recommended": 0,
+      "evidence": [
+        {
+          "text": "A draft PR is where desk sessions stop",
+          "source": "desk v3"
+        },
+        {
+          "text": "Tier 2 track",
+          "source": "card"
+        }
+      ],
+      "links": [],
+      "created_at": "2026-11-24T13:26:00Z",
+      "answer": null
+    },
+    {
+      "id": "D19",
+      "track": "121",
+      "session": "3f91c2aa-6b7c-4d8e-9f0a-1b2c3d4e5f61",
+      "from": "agent",
+      "question": "Staging run of the pantry refund screen (#418), about 3 minutes. (a) Run `! aws sso login --profile pantry-staging` here, so I can send two test orders to the staging shop. Answer \"go\" and I seed them and tell you the order numbers. (b) Once I say it's on staging: open https://staging.pantry.example signed in with the demo account. (c) Click \"Refunds\" in the nav: two orders from test-buyer@example.com should be there, with the count beside the nav entry. (d) On the first one, press Refund, type the reason \"damaged\" and tell me what the total says.",
+      "options": [],
+      "evidence": [],
+      "links": [],
+      "created_at": "2026-11-24T13:20:00Z",
+      "answer": null
+    }
+  ],
+  "conversation": [
+    {
+      "id": "m84",
+      "at": "2026-11-24T12:57:00Z",
+      "role": "emil",
+      "text": "take bun-rollout, one session per repo, stop at PRs"
+    },
+    {
+      "id": "m85",
+      "at": "2026-11-24T12:58:00Z",
+      "role": "desk",
+      "text": "Started 3 sessions under bun-rollout. app-template-node waits in the queue until a slot frees.",
+      "steps": 4
+    },
+    {
+      "id": "m86",
+      "at": "2026-11-24T13:21:00Z",
+      "role": "report",
+      "session": "b25e44d1-7c8d-4e9f-8a1b-2c3d4e5f6a72",
+      "outcome": "done",
+      "text": "bun replaces node in the Dockerfile and CI, and bun test passes. Branch bun/queue-api."
+    },
+    {
+      "id": "m87",
+      "at": "2026-11-24T13:26:00Z",
+      "role": "report",
+      "session": "7a8b070e-2c1d-4e5f-9a0b-c1d2e3f4a5b6",
+      "outcome": "done",
+      "text": "PR #418 is open, CI is green and Jordan approved. Stopped before merging."
+    },
+    {
+      "id": "m88",
+      "at": "2026-11-24T13:26:00Z",
+      "role": "report",
+      "session": "5d6e7f80-9a0b-4c1d-8e2f-4a5b6c7d8e94",
+      "outcome": "blocked",
+      "text": "`gh pr create --draft --base main`"
+    },
+    {
+      "id": "m89",
+      "at": "2026-11-24T13:26:00Z",
+      "role": "desk",
+      "outcome": "reasked",
+      "text": "Open:\n1. **Merge #418 now?** I recommend yes.\n2. **Allow the draft PR?** I recommend yes.",
+      "steps": 7
+    },
+    {
+      "id": "m90",
+      "at": "2026-11-24T13:27:00Z",
+      "role": "desk",
+      "text": "Two need you: D14 and D15. I open the queue-api PR next unless you say no.",
+      "steps": 2
+    }
+  ],
+  "handled": [
+    {
+      "id": "e501",
+      "at": "2026-11-24T12:10:00Z",
+      "track": "108",
+      "kind": "nudged",
+      "did": "Reminded weekly-brief that the dashboard refresh was due"
+    },
+    {
+      "id": "e502",
+      "at": "2026-11-24T13:22:00Z",
+      "track": "121",
+      "kind": "verified",
+      "did": "Ran verify on queue-api: pass"
+    },
+    {
+      "id": "e503",
+      "at": "2026-11-24T13:30:00Z",
+      "track": "121",
+      "kind": "nudged",
+      "did": "Reminded queue-api that the retry test was still red"
+    },
+    {
+      "id": "e504",
+      "at": "2026-11-24T13:34:00Z",
+      "track": "108",
+      "kind": "verified",
+      "did": "Ran verify on weekly-brief: pass"
+    },
+    {
+      "id": "e505",
+      "at": "2026-11-24T13:41:00Z",
+      "track": "121",
+      "kind": "verified",
+      "did": "Ran verify on pantry-api: pass"
+    },
+    {
+      "id": "e506",
+      "at": "2026-11-24T13:48:00Z",
+      "track": "108",
+      "kind": "nudged",
+      "did": "Reminded weekly-brief to push its branch"
+    },
+    {
+      "id": "e507",
+      "at": "2026-11-24T13:55:00Z",
+      "track": "121",
+      "kind": "verified",
+      "did": "Ran verify on recipe-search: pass"
+    }
+  ]
+}

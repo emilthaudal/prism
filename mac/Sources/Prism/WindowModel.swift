@@ -40,6 +40,9 @@ final class WindowModel {
     /// False while `make ui-check` records: a still shows the state its script sets, never the real pointer's (EMI-486).
     var pointerLive = true
     var pressedTarget: String?
+    /// EMI-500 prototypes: how a quiet notice shows, and whether the picker shows (--lab, fixture only).
+    var noticeStyle = NoticeStyle.banner
+    var noticeLabShown = false
     /// The conversation entry to bring to the top.
     var jumpRequest: JumpRequest?
     /// The message a jump landed on, shaded for a moment.

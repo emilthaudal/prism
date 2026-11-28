@@ -1,8 +1,8 @@
 import Foundation
 
-/// `Prism [--fixture PATH] [--appearance light|dark] [--background] [--select ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-overnight] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]`.
+/// `Prism [--fixture PATH] [--appearance light|dark] [--background] [--select ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-overnight] [--demo-notice] [--demo-whole] [--lab notice=banner|toast|card] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]`.
 struct LaunchOptions {
-    static let usage = "usage: Prism [--fixture PATH] [--appearance light|dark] [--background] [--select QUESTION-OR-SESSION-ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-overnight] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]"
+    static let usage = "usage: Prism [--fixture PATH] [--appearance light|dark] [--background] [--select QUESTION-OR-SESSION-ID] [--away-since ISO8601] [--demo-answer] [--demo-stage] [--demo-pick N] [--demo-overnight] [--demo-notice] [--demo-whole] [--lab notice=banner|toast|card] [--demo-script FILE [--motion-dir DIR | --ui-dir DIR]] [--snapshot PNG]"
 
     /// Runs on this snapshot in memory instead of prism server.
     var fixture: URL?
@@ -22,6 +22,12 @@ struct LaunchOptions {
     var sidebarOnly = false
     /// Fixture only: opens the "Run overnight" sheet filled with made-up values.
     var demoOvernight = false
+    /// Fixture only: shows "Asked TRACK about ID" for the --select'ed question, kept until dismissed.
+    var demoNotice = false
+    /// Fixture captures only: a long question's body opens whole.
+    var demoWhole = false
+    /// Fixture only, EMI-500 prototypes: shows the notice picker, opened on this style (see NoticeStyle).
+    var noticeLab: NoticeStyle?
     /// Fixture only: plays this script's timed changes (see scripts/motion-sample.json).
     var demoScript: URL?
     /// With --demo-script: waits for the recorder's flag here, then writes the step timings here (make motion).
@@ -50,6 +56,9 @@ struct LaunchOptions {
                 demoPick = n
             case "--sidebar-only": sidebarOnly = true
             case "--demo-overnight": demoOvernight = true
+            case "--demo-notice": demoNotice = true
+            case "--demo-whole": demoWhole = true
+            case "--lab": noticeLab = try NoticeStyle(lab: try Self.value(arg, &it))
             case "--demo-script": demoScript = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--motion-dir": motionDir = URL(fileURLWithPath: try Self.value(arg, &it))
             case "--ui-dir": uiDir = URL(fileURLWithPath: try Self.value(arg, &it))

@@ -257,10 +257,8 @@ struct QuestionComposer: View {
                 Text(question.id)
                     .font(.prismID)
                     .foregroundStyle(keyed ? AnyShapeStyle(Theme.question) : AnyShapeStyle(.secondary))
-                // Up to 8 lines shows a whole permission prompt; forcing the full height made a ~500-character
-                // prompt blank the whole window. The tooltip holds anything longer.
-                Text(Theme.questionMarkdown(question.question)).font(.prismQuestion).lineLimit(8)
-                    .help(question.question)
+                QuestionTextView(question: question.question)
+                    .id(question.id)
                 Spacer(minLength: Space.s)
                 if !embedded {
                     if let (n, of) = position, of > 1 {
@@ -272,6 +270,10 @@ struct QuestionComposer: View {
                 }
             }
             .padding(.horizontal, Space.s)
+            if model.noticeStyle == .card, let notice = store.notice, notice.isQuiet, notice.questionID == question.id {
+                AskedLine(track: question.track.flatMap { store.snapshot.track($0)?.name } ?? question.id)
+                    .padding(.horizontal, Space.s)
+            }
             if let pending = store.answers.pending(for: question.id) {
                 CountdownRow(store: store, pending: pending).transition(Motion.fadeTransition)
             } else if let batch = store.answers.batch(containing: question.id) {

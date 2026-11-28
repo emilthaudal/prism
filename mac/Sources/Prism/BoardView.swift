@@ -382,7 +382,7 @@ struct QuestionCard: View {
                     .fixedSize()
             }
             // The card is a summary: a long ask reads in full in the composer.
-            Text(Theme.questionMarkdown(question.question))
+            Text(Theme.questionMarkdown(Theme.questionText(question.question).headline))
                 .font(.prismQuestion)
                 .lineLimit(6)
                 .fixedSize(horizontal: false, vertical: true)

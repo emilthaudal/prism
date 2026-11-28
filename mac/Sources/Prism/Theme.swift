@@ -94,6 +94,8 @@ enum Theme {
     static let composerRadius = Space.l
     /// A track's decision dialog scrolls past this, so the conversation keeps most of the window.
     static let dialogMaxHeight: CGFloat = 480
+    /// A question's body shown whole scrolls past this.
+    static let questionBodyMaxHeight: CGFloat = 240
     static let chipHeight: CGFloat = 16
     /// The hit area of an icon-only button.
     static let iconTarget: CGFloat = 20
@@ -183,6 +185,17 @@ enum Theme {
         remember("q" + s, out)
         return out
     }
+
+    /// A question laid out as title and body, by its text: worked out once, as the Markdown is.
+    static func questionText(_ s: String) -> QuestionText {
+        if let hit = laidOut[s] { return hit }
+        let out = QuestionText(s)
+        if laidOut.count > 500 { laidOut.removeAll(keepingCapacity: true) }
+        laidOut[s] = out
+        return out
+    }
+
+    nonisolated(unsafe) private static var laidOut: [String: QuestionText] = [:]
 
     /// Parsed Markdown by its source. A view's body can run on every frame of a transition (a glass morph does), and
     /// parsing a question and its options each time dropped frames. Views read it on the main actor only.
