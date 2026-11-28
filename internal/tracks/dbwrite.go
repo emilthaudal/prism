@@ -492,6 +492,7 @@ func runChecksStore(dry bool, eval evaluator, out, errw io.Writer) error {
 			fmt.Fprintf(out, "%s: %q is %s, unchanged\n", c.Name, text, got)
 		}
 	}
+	refreshMilestones(st, dry, eval, out, errw)
 	if dry {
 		return nil
 	}

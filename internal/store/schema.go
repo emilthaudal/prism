@@ -1,6 +1,6 @@
 package store
 
-const schemaVersion = milestonesSchema
+const schemaVersion = milestonePRSchema
 
 const schema = `
 CREATE TABLE IF NOT EXISTS tracks (
@@ -187,6 +187,8 @@ CREATE TABLE IF NOT EXISTS milestones (
   position   INTEGER NOT NULL,
   title      TEXT NOT NULL,
   reached_at TEXT,
+  pr         TEXT,
+  pr_state   TEXT,
   PRIMARY KEY (track_id, position)
 );
 CREATE TABLE IF NOT EXISTS desk_queue (

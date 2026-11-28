@@ -58,14 +58,16 @@ type apiTrack struct {
 }
 
 type apiMilestone struct {
-	Title string `json:"title"`
-	Done  bool   `json:"done"`
+	Title   string `json:"title"`
+	Done    bool   `json:"done"`
+	PR      string `json:"pr,omitempty"`
+	PRState string `json:"pr_state,omitempty"`
 }
 
 func apiMilestones(list []store.Milestone) []apiMilestone {
 	var out []apiMilestone
 	for _, m := range list {
-		out = append(out, apiMilestone{Title: m.Title, Done: m.Done()})
+		out = append(out, apiMilestone{Title: m.Title, Done: m.Done(), PR: m.PR, PRState: m.PRState})
 	}
 	return out
 }

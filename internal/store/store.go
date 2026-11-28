@@ -209,6 +209,8 @@ var addedColumns = []struct{ table, name, def string }{
 	{"desk", "claude_session", "TEXT NOT NULL DEFAULT ''"},
 	{"questions", "attachments", "TEXT NOT NULL DEFAULT '[]'"},
 	{"sessions", "activity", "TEXT NOT NULL DEFAULT ''"},
+	{"milestones", "pr", "TEXT"},
+	{"milestones", "pr_state", "TEXT"},
 }
 
 func ensureColumn(tx *wtx, col struct{ table, name, def string }) error {
