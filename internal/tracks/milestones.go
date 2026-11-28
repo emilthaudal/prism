@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/emilthaudal/prism/internal/store"
@@ -47,6 +48,12 @@ func printMilestones(list []store.Milestone, out io.Writer) {
 // milestonesCmd is a track's own list of steps to its goal: the track's agent sets the whole
 // ordered list, ticks one as reached, unticks it, and lists them.
 func milestonesCmd(args []string, out io.Writer) error {
+	for _, a := range args {
+		if a == "--help" || a == "-h" {
+			fmt.Fprintln(out, milestonesUsage)
+			return nil
+		}
+	}
 	if !storeOn() {
 		return errors.New("tracks milestones " + needsStore)
 	}
@@ -54,6 +61,11 @@ func milestonesCmd(args []string, out io.Writer) error {
 		return errors.New(milestonesUsage)
 	}
 	name, rest := args[0], args[1:]
+	for _, a := range rest {
+		if strings.HasPrefix(a, "-") && !(a == "--json" && len(rest) == 1) {
+			return fmt.Errorf("unknown option %q: %s", a, milestonesUsage)
+		}
+	}
 	explain := func(err error) error {
 		switch {
 		case errors.Is(err, store.ErrNoTrack):

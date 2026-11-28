@@ -47,6 +47,37 @@ func TestMilestonesSetTickUntickList(t *testing.T) {
 	}
 }
 
+func TestMilestonesHelpPrintsUsageAndDashArgsAreRefused(t *testing.T) {
+	liveHome(t)
+	if _, code := runCLI(t, "milestones", "solo", "set", "keep me"); code != 0 {
+		t.Fatal(code)
+	}
+	for _, args := range [][]string{
+		{"milestones", "solo", "set", "--help"},
+		{"milestones", "solo", "set", "-h"},
+		{"milestones", "solo", "tick", "--help"},
+		{"milestones", "--help"},
+		{"milestones", "solo", "--help"},
+	} {
+		if out, code := runCLI(t, args...); code != 0 || !strings.Contains(out, "usage: tracks milestones") {
+			t.Errorf("%v: %d %s", args, code, out)
+		}
+	}
+	for _, args := range [][]string{
+		{"milestones", "solo", "set", "--bogus"},
+		{"milestones", "solo", "set", "ok", "-x"},
+		{"milestones", "solo", "tick", "-1"},
+	} {
+		if out, code := runCLI(t, args...); code == 0 || !strings.Contains(out, "unknown option") {
+			t.Errorf("%v: %d %s", args, code, out)
+		}
+	}
+	out, _ := runCLI(t, "milestones", "solo")
+	if !strings.Contains(out, "1. [ ] keep me") || strings.Contains(out, "--") || strings.Contains(out, "2.") {
+		t.Errorf("list changed: %s", out)
+	}
+}
+
 func TestTheSnapshotCarriesMilestonesInTheAppsShape(t *testing.T) {
 	_, c := liveHome(t)
 	if _, code := runCLI(t, "milestones", "solo", "set", "design agreed", "store done"); code != 0 {
