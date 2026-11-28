@@ -101,6 +101,26 @@ func deskSendCmd(s store.Session, text string, replace, now bool, out io.Writer)
 	return nil
 }
 
+// deskDropCmd is tracks send --drop: it deletes the session's held note, which a closed or
+// gone track leaves failing at every stop.
+func deskDropCmd(s store.Session, out io.Writer) error {
+	label := sessionLabel(s.Track, s.Name, s.ID)
+	var n int
+	err := withBareStore(func(st *store.Store) (err error) { n, err = st.DropNote(s.ID); return err })
+	if errors.Is(err, store.ErrEmils) {
+		return fmt.Errorf("refused: %s is Emil's", label)
+	}
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		fmt.Fprintf(out, "no held note for %s\n", label)
+		return nil
+	}
+	fmt.Fprintf(out, "dropped the held note for %s\n", label)
+	return nil
+}
+
 // bgSession is the session the desk started for track, which runs as claude --bg with no Rex
 // pane: an answer reaches it as a note, the way tracks send does. ok is false when the desk
 // started none for track.
@@ -222,11 +242,18 @@ func awaitExit(id string) error {
 // note per watch: a note whose delivery failed stays held for the next watch or send. A
 // session past trackCompactAt is compacted first, and its note waits until that is done.
 func deliverHeld(seen map[string]deskSeen) ([]string, error) {
+	var lines []string
+	var dropped int
+	if err := withBareStore(func(st *store.Store) (err error) { dropped, err = st.DropClosedNotes(); return err }); err != nil {
+		return nil, err
+	}
+	if dropped > 0 {
+		lines = append(lines, fmt.Sprintf("dropped %d held note(s) of closed tracks", dropped))
+	}
 	var notes []store.HeldNote
 	if err := withBareStore(func(st *store.Store) (err error) { notes, err = st.DeliverableNotes(); return err }); err != nil {
 		return nil, err
 	}
-	var lines []string
 	for _, n := range notes {
 		key := "note:" + strconv.FormatInt(n.ID, 10)
 		if _, tried := seen[key]; tried {

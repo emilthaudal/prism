@@ -379,6 +379,9 @@ func (s *Store) CloseTrack(name string) error {
 			fmtTime(now), closedByClosed, t.ID); err != nil {
 			return err
 		}
+		if _, err := dropHeld(tx, `session_id IN (SELECT id FROM sessions WHERE track_id = ?)`, now, "close", t.ID); err != nil {
+			return err
+		}
 		if err := s.mirror(tx, t.ID, now); err != nil {
 			return err
 		}
