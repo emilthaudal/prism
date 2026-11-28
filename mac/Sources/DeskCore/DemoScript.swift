@@ -98,9 +98,9 @@ public struct DemoScript: Decodable, Equatable, Sendable {
         case dismiss
         /// Sets the text of the message to the desk.
         case draft(String)
-        /// EMI-488 lab: brings a conversation entry to the top, as a click on its mark or its board row does.
+        /// Brings a conversation entry to the top, as a click on its mark or its board row does.
         case jump(String)
-        /// EMI-488 lab: keeps a message of Prism's on the board, or lets it go.
+        /// Keeps a message of Prism's on the board, or lets it go.
         case keep(String)
         /// Changes nothing; the step names what happens on its own, such as a countdown running out.
         case wait

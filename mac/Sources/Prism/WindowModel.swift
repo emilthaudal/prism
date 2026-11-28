@@ -40,14 +40,11 @@ final class WindowModel {
     /// False while `make ui-check` records: a still shows the state its script sets, never the real pointer's (EMI-486).
     var pointerLive = true
     var pressedTarget: String?
-    /// EMI-488 prototypes: the options picked, and whether the picker shows (--lab, fixture only).
-    var lab = Lab()
-    var labShown = false
     /// The conversation entry to bring to the top.
     var jumpRequest: JumpRequest?
     /// The message a jump landed on, shaded for a moment.
     var landed: String?
-    /// The messages of Prism's kept on the board, in the order kept. In memory only while this is a prototype.
+    /// The messages of Prism's kept on the board, in the order kept. Held in memory only.
     var kept: [String] = []
     /// The message of Emil's the last step or mark went to; nil at the bottom.
     var askedCursor: String?

@@ -87,7 +87,7 @@ struct BoardView: View {
                         }
                     }
                 }
-                AnswersSection(store: store, model: model)
+                KeptSection(store: store, model: model)
                 // A card per open track with its goal and milestones, then the loops. What a session does now is the
                 // sidebar's to say, so the board has no In flight list (EMI-481).
                 MilestoneSection(store: store, model: model, now: now)

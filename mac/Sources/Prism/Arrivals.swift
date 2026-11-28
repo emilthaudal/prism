@@ -50,7 +50,7 @@ struct ArrivalScroll<Content: View>: View {
     var ids: [String]
     var scrollRequest: WindowModel.ScrollRequest?
     var windowVisible: Bool
-    /// EMI-488 lab: an entry to bring to the top, and a note when the view comes back to the bottom.
+    /// An entry to bring to the top, and a note when the view comes back to the bottom.
     var jumpRequest: WindowModel.JumpRequest? = nil
     var backAtBottom: () -> Void = {}
     @ViewBuilder var content: Content

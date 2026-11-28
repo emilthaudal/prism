@@ -40,12 +40,6 @@ public enum Answers {
         return out
     }
 
-    /// The replies to what Emil asked as a question. A message with no question mark is an instruction ("start a
-    /// track for..."), and its reply is an acknowledgement, not something to come back to.
-    public static func direct(_ conversation: [ConversationEntry]) -> [DirectAnswer] {
-        replies(conversation).filter { $0.question?.text.contains("?") == true }
-    }
-
     /// The messages Emil kept, in the order he kept them, each with the question it answered if it answered one.
     public static func kept(_ ids: [String], in conversation: [ConversationEntry]) -> [DirectAnswer] {
         let byAnswer = Dictionary(replies(conversation).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })

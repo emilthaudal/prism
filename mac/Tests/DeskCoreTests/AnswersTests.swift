@@ -8,17 +8,13 @@ import Testing
         return try DeskJSON.decoder().decode(Snapshot.self, from: Data(contentsOf: url)).conversation
     }
 
-    /// EMI-488's check: an answer given ten entries ago is one of the two the fixture lists, with its question.
-    @Test func theFixturesDirectAnswersAreFoundWithTheirQuestions() throws {
+    @Test func repliesPairEachQuestionWithPrismsFirstAnswer() throws {
         let c = try conversation()
-        let direct = Answers.direct(c)
-        #expect(direct.map(\.id) == ["m71", "m76"])
-        #expect(direct.map(\.anchor) == ["m70", "m75"])
-        #expect(direct[0].gist == "The jump is the new ranking step, not the index.")
-        let behind = c.count - 1 - (c.firstIndex { $0.id == "m71" } ?? 0)
-        #expect(behind >= 10)
-        // The instruction's reply is a reply, not an answer; a message of Prism's own is neither.
-        #expect(Answers.replies(c).map(\.id) == ["m67", "m71", "m76"])
+        let replies = Answers.replies(c)
+        // A message of Prism's own that answered nothing is not a reply.
+        #expect(replies.map(\.id) == ["m67", "m71", "m76"])
+        #expect(replies.map(\.anchor) == ["m66", "m70", "m75"])
+        #expect(replies[1].gist == "The jump is the new ranking step, not the index.")
     }
 
     @Test func steppingGoesBackFromTheBottomAndEndsThere() throws {
