@@ -58,6 +58,37 @@ private func fade(_ t: Double, from: Double, to: Double) -> [UInt8] {
         #expect(report.steps[0].problems.isEmpty)
     }
 
+    /// Runs one step under Reduce Motion on four pixels, the picture a function of time.
+    private func reduced(_ picture: @escaping (Double) -> [UInt8]) -> MotionCheck.Report {
+        let times = stride(from: 0.0, to: 2, by: 1.0 / 120).map { $0 }
+        let timings = Timings(leadStart: 0, end: 2, reduceMotion: true, steps: [Timings.Step(name: "arrive", start: 1)], ticks: times)
+        let frames = times.indices.map { Recording.Frame(t: times[$0], picture: $0) }
+        var check = MotionCheck()
+        check.minPixels = 1
+        return check.check(timings, Recording(width: 4, height: 1, scale: 100, frames: frames), pictures: times.map(picture))
+    }
+
+    @Test func aJumpWithAFadeAfterItIsNotAMoveUnderReduceMotion() {
+        // The layout jumps (pixel 0) in the first frame and a new row fades in (pixels 2 and 3).
+        let report = reduced { t in
+            let share = fade(t, from: 1.01, to: 1.15)[0]
+            return t < 1.01 ? [200, 0, 0, 0] : [0, 0, share, share]
+        }
+        #expect(report.steps[0].moves == 0)
+        #expect(!report.failed)
+    }
+
+    @Test func aSlideAfterTheJumpIsStillAMoveUnderReduceMotion() {
+        let report = reduced { t in
+            if t < 1.01 { return [200, 0, 0, 0] }
+            if t < 1.03 { return [0, 0, 100, 100] }
+            if t < 1.1 { return [0, 0, 200, 0] }
+            return [0, 0, 200, 200]
+        }
+        #expect(report.steps[0].moves > 0)
+        #expect(report.steps[0].problems.contains("moves under Reduce Motion"))
+    }
+
     @Test func aChangeThatPlaysTwiceFails() {
         let report = run(steps: [Timings.Step(name: "fold", start: 1)]) { t in
             t < 1.05 ? fade(t, from: 1.01, to: 1.05) : fade(t, from: 1.4, to: 1.45).map { 200 - $0 }

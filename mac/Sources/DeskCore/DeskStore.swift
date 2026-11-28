@@ -418,7 +418,13 @@ public final class DeskStore {
     }
 
     public func cancelFocusSwap() { focusSwap = nil }
-    public func open(_ trackID: String) async { await send(.open(track: trackID)) }
+    /// Opens the track in Rex; a track the desk runs in the background is attached to there.
+    public func open(_ trackID: String) async {
+        guard let reply = await send(.open(track: trackID)) else { return }
+        if let command = reply.command {
+            notice = Notice(text: "Rex isn't running. Open it in a terminal:", command: command)
+        }
+    }
     public func close(_ questionID: String, note: String = "") async { await send(.close(question: questionID, note: note)) }
 
     /// Takes back a handled entry: reopens a track the desk closed. The server's status says what it did.

@@ -186,7 +186,7 @@ public struct Sidebar: Equatable, Sendable {
     }
 
     static func sessionRow(_ s: Session, questions: [Question]) -> SidebarSession {
-        SidebarSession(session: s, chip: chip(for: s, questions: questions), activity: s.liveActivity.map(Activity.readable), subagents: s.subagents ?? [], owner: s.isEmils ? "yours" : "desk")
+        SidebarSession(session: s, chip: chip(for: s, questions: questions), activity: s.liveActivity.map(Activity.readable), subagents: (s.subagents ?? []).filter { !$0.isEmptyAndDone }, owner: s.isEmils ? "yours" : "desk")
     }
 
     /// A track's sessions as the sidebar lists them, newest first: a stopped session shows only while it is the
@@ -216,7 +216,7 @@ public struct Sidebar: Equatable, Sendable {
         // has subagents to show.
         let shown = listed(sessions)
         let live = shown.filter { $0.state != .stopped }
-        let branches = live.count > 1 || shown.contains { !($0.subagents ?? []).isEmpty }
+        let branches = live.count > 1 || shown.contains { $0.subagents?.contains { !$0.isEmptyAndDone } == true }
         var row = SidebarTrack(track: t, nested: branches ? shown.map { sessionRow($0, questions: all) } : [], primary: primary, chip: chip, ownedByEmil: ownedByEmil)
         row.line = branches ? nil : line(t, primary: primary, chip: chip)
         return row

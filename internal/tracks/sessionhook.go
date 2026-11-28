@@ -38,9 +38,14 @@ func sessionEventOf(h hookInput) (store.SessionEvent, bool) {
 	}
 	switch h.Event {
 	case "PreToolUse":
-		// A subagent's own tool calls are not the session's activity.
-		if h.AgentID != "" || h.ToolName == "" {
+		if h.ToolName == "" {
 			return e, false
+		}
+		// A subagent's own tool calls are not the session's activity, but one means its prompt
+		// was answered.
+		if h.AgentID != "" {
+			e.Event, e.AgentID = store.SessionAgentTool, h.AgentID
+			return e, true
 		}
 		e.Event, e.Activity = store.SessionTool, activityOf(h.ToolName, h.ToolInput)
 		if isAgentTool(h.ToolName) {

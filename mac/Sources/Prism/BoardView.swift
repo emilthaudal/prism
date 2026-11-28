@@ -100,37 +100,18 @@ struct BoardView: View {
                     }
                 }
                 if !board.landed.isEmpty {
-                    DisclosureGroup(isExpanded: Binding(get: { landedOpen }, set: { open in withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { landedOpen = open } })) {
+                    FoldHeading(title: "Landed", count: board.landed.count, open: landedOpen, target: "landed", toggle: toggleLanded)
+                    if landedOpen {
                         VStack(spacing: Space.xs) {
                             ForEach(board.landed) { session in
                                 LaneRow(session: session, detail: session.changes?.branch ?? "merged")
                             }
                         }
                         .padding(.top, Space.xs)
-                    } label: {
-                        SectionHeading("Landed", count: board.landed.count)
                     }
                 }
                 if !s.handled.isEmpty {
-                    // A heading that folds, with the rows on the same edge as the other sections (a DisclosureGroup
-                    // indents them).
-                    Button(action: toggleHandled) {
-                        HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
-                            Image(systemName: "chevron.right")
-                                .font(.prismMeta.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .rotationEffect(.degrees(isOpen ? 90 : 0))
-                            SectionHeading("Handled today", count: Self.handledToday(s.handled, now: now), bare: true)
-                        }
-                        // The shade is the label's own box: even padding inside it, and the chevron on the text edge.
-                        .padding(.horizontal, Space.s)
-                        .padding(.vertical, Space.xs)
-                    }
-                    .buttonStyle(RowButtonStyle())
-                    .targetID("handled")
-                    .id("handled")
-                    .padding(.horizontal, Space.m - Space.s)
-                    .padding(.top, Space.m - Space.xs)
+                    FoldHeading(title: "Handled today", count: Self.handledToday(s.handled, now: now), open: isOpen, target: "handled", toggle: toggleHandled)
                     if isOpen {
                         let newest = Array(s.handled.reversed())
                         let shown = handledAll ? newest : Array(newest.prefix(quiet ? Self.quietShown : Self.handledShown))
@@ -139,13 +120,19 @@ struct BoardView: View {
                                 HandledRow(store: store, entry: entry, trackName: Self.handledName(entry, in: s), now: now)
                             }
                             if newest.count > (quiet ? Self.quietShown : Self.handledShown) {
-                                Button(handledAll ? "Show fewer" : "Show all \(newest.count)") {
+                                Button {
                                     withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { handledAll.toggle() }
+                                } label: {
+                                    Text(handledAll ? "Show fewer" : "Show all \(newest.count)")
+                                        .font(.callout.weight(.medium))
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, Space.s)
+                                        .padding(.vertical, Space.xs)
                                 }
-                                .buttonStyle(.plain)
-                                .font(.callout.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, Space.m)
+                                .buttonStyle(RowButtonStyle())
+                                .targetID("handled-all")
+                                .id("handled-all")
+                                .padding(.horizontal, Space.m - Space.s)
                                 .padding(.top, Space.xs)
                             }
                         }
@@ -159,7 +146,9 @@ struct BoardView: View {
             .animation(motion.layout, value: placements)
         }
         .scrollPosition($scroll)
-        .onChange(of: model.hoveredTarget) { _, target in if target == "handled" { scroll.scrollTo(id: "handled", anchor: .center) } }
+        .onChange(of: model.hoveredTarget) { _, target in
+            if let target, Self.foldTargets.contains(target) { scroll.scrollTo(id: target, anchor: .center) }
+        }
         .onAppear {
             before = placements
             primed = true
@@ -169,8 +158,17 @@ struct BoardView: View {
             before = new
         }
         .onChange(of: quiet) { _, now in if !now { handledOverride = nil } }
-        .onChange(of: model.foldRequest) { _, request in if request?.target == "handled" { toggleHandled() } }
+        .onChange(of: model.foldRequest) { _, request in
+            switch request?.target {
+            case "handled": toggleHandled()
+            case "landed": toggleLanded()
+            default: break
+            }
+        }
     }
+
+    /// The targets a demo script scrolls into view before hovering them.
+    private static let foldTargets: Set<String> = ["handled", "landed", "handled-all"]
 
     /// How the board changes: a session changing section settles, a card leaving closes the gap as it fades, a card
     /// arriving makes room. Nothing animates on first load or while the window is not on screen.
@@ -190,6 +188,40 @@ struct BoardView: View {
 
     private func toggleHandled() {
         withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { handledOverride = !isOpen }
+    }
+
+    private func toggleLanded() {
+        withAnimation(Motion.moves(Motion.quick, reduce: reduce)) { landedOpen.toggle() }
+    }
+}
+
+/// A board section's heading that folds its rows: the chevron on the text edge and a shade that fits the label.
+struct FoldHeading: View {
+    var title: String
+    var count: Int
+    var open: Bool
+    /// The demo scripts' name for it (`hover`, `fold`), and the id the board scrolls to.
+    var target: String
+    var toggle: () -> Void
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                Image(systemName: "chevron.right")
+                    .font(.prismMeta.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(open ? 90 : 0))
+                SectionHeading(title, count: count, bare: true)
+            }
+            // The shade is the label's own box: even padding inside it, and the chevron on the text edge.
+            .padding(.horizontal, Space.s)
+            .padding(.vertical, Space.xs)
+        }
+        .buttonStyle(RowButtonStyle())
+        .targetID(target)
+        .id(target)
+        .padding(.horizontal, Space.m - Space.s)
+        .padding(.top, Space.m - Space.xs)
     }
 }
 

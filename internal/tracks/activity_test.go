@@ -75,6 +75,31 @@ func TestHookRecordsTheActivityFromPreToolUseAndClearsItOnStop(t *testing.T) {
 	}
 }
 
+func TestASubagentsNextToolCallClearsTheBlockItsPromptRaised(t *testing.T) {
+	ev := activityHome(t)
+	ev("SessionStart", map[string]any{"source": "startup"})
+	ev("UserPromptSubmit", map[string]any{"prompt": "go"})
+	ev("PreToolUse", map[string]any{"tool_name": "Agent", "tool_use_id": "t1", "tool_input": map[string]any{"description": "review"}})
+	ev("SubagentStart", map[string]any{"agent_id": sessAgent1, "agent_type": "general-purpose"})
+	bash := map[string]any{"tool_name": "Bash", "tool_input": map[string]any{"command": "make test"}, "agent_id": sessAgent1}
+	ev("PermissionRequest", bash)
+	ev("Notification", map[string]any{"message": "Claude needs your permission to use Bash", "notification_type": "permission_prompt"})
+	if s := sessionRow(t, sessA); s.Status != "blocked" {
+		t.Fatalf("the subagent's prompt: %q", s.Status)
+	}
+	ev("PreToolUse", map[string]any{"tool_name": "Read", "tool_input": map[string]any{"file_path": "/work/tr/go.mod"}, "agent_id": sessAgent1})
+	if s := sessionRow(t, sessA); s.Status != "working" || s.WaitingFor != "" || s.Activity != "Agent: review" {
+		t.Errorf("after the prompt was answered: status %q waiting %q activity %q", s.Status, s.WaitingFor, s.Activity)
+	}
+
+	ev("PreToolUse", map[string]any{"tool_name": "Bash", "tool_input": map[string]any{"command": "rm -rf build"}})
+	ev("PermissionRequest", map[string]any{"tool_name": "Bash", "tool_input": map[string]any{"command": "rm -rf build"}})
+	ev("PreToolUse", map[string]any{"tool_name": "Read", "tool_input": map[string]any{"file_path": "/work/tr/go.mod"}, "agent_id": sessAgent2})
+	if s := sessionRow(t, sessA); s.Status != "blocked" {
+		t.Errorf("a background subagent's tool call cleared the session's own prompt: %q", s.Status)
+	}
+}
+
 func TestHookRecordsSubagentsFromTheSubagentEvents(t *testing.T) {
 	ev := activityHome(t)
 	ev("SessionStart", map[string]any{"source": "startup"})

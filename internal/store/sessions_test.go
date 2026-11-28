@@ -243,6 +243,36 @@ func TestPromptHandsADeskSessionToEmilUnlessTheDeskDeliveredIt(t *testing.T) {
 	eq(t, "Emil's own prompt", session(t, s, "d1").Owner, "emil")
 }
 
+func TestEmilTakingADeskSessionOverClosesItsQuestions(t *testing.T) {
+	s := newStore(t)
+	mustTrack(t, s, "alpha")
+	mustTrack(t, s, "beta")
+	if err := s.AddAsk("alpha", "Sign in to pantry? 1) yes 2) no. Recommend: 1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddAsk("beta", "Ship it? 1) yes 2) no. Recommend: 1"); err != nil {
+		t.Fatal(err)
+	}
+	hookSession(t, s, SessionEvent{Event: SessionStart, ID: "d1", Background: true})
+	if _, err := s.db.Exec(`UPDATE sessions SET owner = 'desk', track_id = (SELECT id FROM tracks WHERE name = 'alpha') WHERE id = 'd1'`); err != nil {
+		t.Fatal(err)
+	}
+	open := func() (names []string) {
+		t.Helper()
+		qs, err := s.OpenQuestions()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, q := range qs {
+			names = append(names, q.Track)
+		}
+		return names
+	}
+	eq(t, "before", open(), []string{"alpha", "beta"})
+	hookSession(t, s, SessionEvent{Event: SessionPrompt, ID: "d1", Prompt: "I'll sign in myself"})
+	eq(t, "after Emil typed into it", open(), []string{"beta"})
+}
+
 // EMI-404: a desk session whose background review finished stayed the desk's no longer.
 func TestHarnessPromptKeepsADeskSessionTheDesks(t *testing.T) {
 	s := newStore(t)

@@ -118,6 +118,15 @@ import Testing
         #expect(platform.subagents.map(\.isWorking) == [true, false])
     }
 
+    @Test func aFinishedSubagentWithoutNameIsNotListed() throws {
+        let sidebar = Sidebar(try loadFixture())
+        let platform = try #require(sidebar.sections[0].tracks[1].nested.first { $0.session.name == "pantry-api" })
+        #expect(platform.session.subagents?.count == 3)
+        #expect(platform.subagents.map(\.name) == ["PHP 8.5 delta rerun", "lint sweep"])
+        let onlyBlank = Session(id: "z", name: "x", subagents: [Subagent(name: " ", status: "done")])
+        #expect(Sidebar.sessionRow(onlyBlank, questions: []).subagents.isEmpty)
+    }
+
     @Test func aSessionRowDoesNotRepeatItsTracksName() {
         func row(_ name: String, activity: String? = nil) -> SidebarSession {
             SidebarSession(session: Session(id: "a", name: name), chip: .idle, activity: activity, subagents: [], owner: "desk")
