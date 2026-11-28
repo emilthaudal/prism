@@ -190,7 +190,7 @@ struct DecisionChip: View {
                     .font(.prismID)
                     .foregroundStyle(question.isOpen ? AnyShapeStyle(Theme.question) : AnyShapeStyle(.secondary))
                 VStack(alignment: .leading, spacing: Space.xxs) {
-                    Text(Theme.questionMarkdown(question.question)).font(.callout.weight(.medium)).lineLimit(2)
+                    Text(Theme.questionMarkdown(Theme.questionText(question.question).headline)).font(.callout.weight(.medium)).lineLimit(2)
                     Text(question.chipSummary).font(.prismMeta).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: Space.s)

@@ -89,7 +89,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.overnightSeed = OvernightLoop(goal: "Get p95 of /search under 120 ms on the bench set. Measure with make bench.", folder: "~/code/pantry-api", until: .sevenOClock)
             model.overnightShown = true
         }
-        if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil { preselect(options.select) }
+        if options.demoWhole, fixture != nil { QuestionTextView.opensWhole = true }
+        if options.select != nil || options.demoAnswer || options.demoStage || options.demoPick != nil || options.demoNotice { preselect(options.select) }
 
         if let path = options.demoScript, let fixture, let view = window.contentView {
             if options.uiDir != nil { model.pointerLive = false }
@@ -188,6 +189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let demoAnswer = options.demoAnswer && fixture != nil
         let demoStage = options.demoStage && fixture != nil
         let demoPick = fixture != nil ? options.demoPick : nil
+        let demoNotice = options.demoNotice && fixture != nil
         Task { [model, store] in
             for _ in 0..<50 where !store.loaded { try? await Task.sleep(for: .milliseconds(20)) }
             defer {
@@ -195,6 +197,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if demoAnswer, let q = model.activeQuestion(in: store.snapshot) { store.answerRecommended(q.id) }
                 if demoStage, let active = model.activeQuestion(in: store.snapshot) {
                     for q in store.batchGroup(of: active) where q.id != active.id { store.answerRecommended(q.id) }
+                }
+                if demoNotice, let q = model.activeQuestion(in: store.snapshot) {
+                    store.noticeLifetime = nil
+                    let track = q.track.flatMap { store.snapshot.track($0)?.name } ?? q.id
+                    store.notice = Notice(text: "Asked \(track) about \(q.id)", symbol: "questionmark.bubble", questionID: q.id)
                 }
             }
             guard let id else { return }

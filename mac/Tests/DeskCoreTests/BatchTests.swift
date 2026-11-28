@@ -180,7 +180,7 @@ private func asked(_ id: String, track: String = "7", session: String = "s7", op
         #expect(await client.actions == [.ask(question: "D1", text: "which is faster?")])
         #expect(store.snapshot.question("D1")?.isOpen == true)
         #expect(store.answers.isEmpty && store.staged.isEmpty)
-        #expect(store.notice == Notice(text: "Asked refunds about D1", symbol: "questionmark.bubble"))
+        #expect(store.notice == Notice(text: "Asked refunds about D1", symbol: "questionmark.bubble", questionID: "D1"))
         await store.ask("D1", "   ")
         #expect(await client.actions.count == 1)
     }

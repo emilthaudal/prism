@@ -23,13 +23,19 @@ public struct Notice: Equatable, Sendable {
     public var isError: Bool
     /// An SF Symbol for a quiet notice that is neither an error nor a command to run.
     public var symbol: String?
+    /// The question a quiet notice is about: it goes once that question is answered or closed.
+    public var questionID: String?
 
-    public init(text: String, command: String? = nil, isError: Bool = false, symbol: String? = nil) {
+    public init(text: String, command: String? = nil, isError: Bool = false, symbol: String? = nil, questionID: String? = nil) {
         self.text = text
         self.command = command
         self.isError = isError
         self.symbol = symbol
+        self.questionID = questionID
     }
+
+    /// A confirmation that needs nothing from Emil, so it leaves on its own; an error or a command waits for him.
+    public var isQuiet: Bool { !isError && command == nil }
 }
 
 /// The app's state: the snapshot kept current from the event stream, the answers counting down, and the actions.
@@ -37,7 +43,10 @@ public struct Notice: Equatable, Sendable {
 @Observable
 public final class DeskStore {
     public private(set) var snapshot = Snapshot.empty {
-        didSet { boardCache = nil }
+        didSet {
+            boardCache = nil
+            if let id = notice?.questionID, snapshot.question(id)?.isOpen != true { notice = nil }
+        }
     }
     public private(set) var loaded = false
     public private(set) var connection = Connection.connecting
@@ -46,7 +55,12 @@ public final class DeskStore {
     public private(set) var staged: [String: AnswerChoice] = [:]
     /// Questions "Show me the options" was pressed for: the button shows it is pending and ignores another click.
     public private(set) var optionsRequested: Set<String> = []
-    public var notice: Notice?
+    public var notice: Notice? {
+        didSet { if notice != oldValue { expireNotice() } }
+    }
+    /// How long a quiet notice stays; nil keeps it until dismissed (fixture captures of a notice).
+    @ObservationIgnored public var noticeLifetime: Duration? = .seconds(5)
+    @ObservationIgnored private(set) var noticeExpiry: Task<Void, Never>?
     /// Set when a track cannot go to focus because focus is full: Emil picks which focus track leaves.
     public var focusSwap: FocusSwap?
 
@@ -85,6 +99,17 @@ public final class DeskStore {
     }
 
     public var now: Date { clock() }
+
+    private func expireNotice() {
+        noticeExpiry?.cancel()
+        noticeExpiry = nil
+        guard let shown = notice, shown.isQuiet, let lifetime = noticeLifetime else { return }
+        noticeExpiry = Task { [weak self, sleep] in
+            do { try await sleep(lifetime) } catch { return }
+            guard let self, !Task.isCancelled, self.notice == shown else { return }
+            self.notice = nil
+        }
+    }
 
     public func retry() { onRetry?() }
 
@@ -335,7 +360,7 @@ public final class DeskStore {
         guard let reply = await send(action) else { return false }
         notice = reply.delivery == "queued"
             ? Notice(text: "Queued for \(track): sent when its agent stops", symbol: "clock")
-            : Notice(text: "Asked \(track) about \(questionID)", symbol: "questionmark.bubble")
+            : Notice(text: "Asked \(track) about \(questionID)", symbol: "questionmark.bubble", questionID: questionID)
         return true
     }
 

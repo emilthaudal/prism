@@ -27,6 +27,16 @@ shot() { # name appearance [app arguments]
 	echo "$out/$name.png"
 }
 
+# EMI-500: a long agent ask on the composer's card, and its "Asked" notice in the card (fixture serve-fixture-ask.json).
+if [ "${ONLY:-}" = ask ]; then
+	for appearance in light dark; do
+		shot "question-long-$appearance" "$appearance" --select D19
+		shot "question-whole-$appearance" "$appearance" --select D19 --demo-whole
+		shot "notice-card-$appearance" "$appearance" --select D19 --demo-notice
+	done
+	exit 0
+fi
+
 # The README's pictures, on made-up data only (docs/readme/fixture.json), since the repo is public.
 if [ "${ONLY:-}" = readme ]; then
 	shot prism-light light
