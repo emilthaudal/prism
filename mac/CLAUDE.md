@@ -3,7 +3,7 @@
 Prism is the desk's native window (renamed from Desk on 2026-11-25; the CLI keeps `tracks desk` for now) (docs/desk-v3.md, step 6): sessions | conversation | board, a client of `prism server`
 (docs/serve-api.md) and nothing else.
 
-- SwiftPM only, no Xcode project, no third-party dependencies, laid out like ~/Developer/meridian. `DeskCore` holds the
+- SwiftPM only, no Xcode project, no third-party dependencies, laid out like ~/Developer/lumen. `DeskCore` holds the
   models, the API client, the fixture client and all logic (sync, board, sidebar, keys, the answer countdown); `Prism` is
   the SwiftUI/AppKit shell.
 - `make test` must pass. `make app` builds and signs `build/Prism.app`; `make install` copies it to `~/Applications`.
