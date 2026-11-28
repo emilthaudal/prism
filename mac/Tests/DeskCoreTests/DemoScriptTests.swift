@@ -56,7 +56,7 @@ import Testing
         {"lead": 0.5, "steps": [
           {"name": "a", "at": 0, "do": "pick", "question": "D14"},
           {"name": "b", "at": 1, "do": "answer", "question": "D14", "option": 2, "expect": 0.2},
-          {"name": "c", "at": 2, "do": "fold", "fold": "handled", "crossfade": true, "again": 0.3},
+          {"name": "c", "at": 2, "do": "fold", "fold": "handled", "crossfade": true, "again": 0.3, "lateFrames": 2, "maxMs": 400},
           {"name": "d", "at": 3, "do": "wait", "continuous": true},
           {"name": "e", "at": 4, "do": "event", "event": {"op": "remove", "kind": "question", "value": {"id": "D14"}}},
           {"name": "f", "at": 5, "do": "undo", "question": "D14"},
@@ -70,6 +70,9 @@ import Testing
         #expect(script.steps[1].expect == 0.2)
         #expect(script.steps[2].crossfade)
         #expect(script.steps[2].again == 0.3)
+        #expect(script.steps[2].lateFrames == 2)
+        #expect(script.steps[2].maxMs == 400)
+        #expect(script.steps[1].lateFrames == nil)
         #expect(script.steps[3].continuous)
     }
 

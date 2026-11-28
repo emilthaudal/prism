@@ -53,7 +53,8 @@ their own then, such as a working session's activity), `tail` and timed `steps`.
 - `wait`: nothing; the step names what happens on its own (the countdown sending).
 
 Optional: `expect` (seconds the animation asks for), `continuous` (changes on its own, such as the countdown: its spells
-are not replays), `crossfade`, and `again` (plays the action again that many seconds later in the same step, to see
+are not replays), `crossfade`, `lateFrames` and `maxMs` (this step may show that many late frames, or take that many milliseconds,
+before it fails; the default is none, and `expect` plus two 60 Hz frames: the composer's glass morph at send is allowed some, EMI-496), and `again` (plays the action again that many seconds later in the same step, to see
 a change that fires twice fail).
 
 `Prism --fixture F --demo-script S` plays a script without recording. With `--motion-dir D` it waits for the

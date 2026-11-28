@@ -142,7 +142,8 @@
       "at": 17,
       "do": "wait",
       "expect": 0.3,
-      "crossfade": true
+      "crossfade": true,
+      "lateFrames": 2
     },
     {
       "name": "session lands",
@@ -174,7 +175,8 @@
           "updated_at": "2026-11-24T13:40:00Z"
         }
       },
-      "expect": 0.3
+      "expect": 0.3,
+      "maxMs": 400
     }
   ]
 }

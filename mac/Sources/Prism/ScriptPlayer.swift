@@ -48,7 +48,7 @@ final class ScriptPlayer: NSObject {
                 await sleep(until: start + step.at)
                 if let interval { signposter.endInterval("step", interval) }
                 interval = signposter.beginInterval("step", id: signposter.makeSignpostID(), "\(step.name)")
-                played.append(Timings.Step(name: step.name, start: CACurrentMediaTime(), expect: step.expect, continuous: step.continuous, crossfade: step.crossfade))
+                played.append(Timings.Step(name: step.name, start: CACurrentMediaTime(), expect: step.expect, continuous: step.continuous, crossfade: step.crossfade, lateFrames: step.lateFrames, maxMs: step.maxMs))
                 await perform(step.action)
                 if let name = step.shot { await shoot(name) }
                 if let again = step.again {

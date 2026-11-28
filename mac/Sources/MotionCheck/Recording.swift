@@ -18,13 +18,19 @@ public struct Timings: Codable, Equatable, Sendable {
         /// Changes on its own through the step, as a countdown does.
         public var continuous: Bool
         public var crossfade: Bool
+        /// Late frames this step may show before it fails; nil allows none.
+        public var lateFrames: Int?
+        /// The longest this step may take on screen, in milliseconds; nil allows what `expect` asks for plus two 60 Hz frames.
+        public var maxMs: Double?
 
-        public init(name: String, start: Double, expect: Double? = nil, continuous: Bool = false, crossfade: Bool = false) {
+        public init(name: String, start: Double, expect: Double? = nil, continuous: Bool = false, crossfade: Bool = false, lateFrames: Int? = nil, maxMs: Double? = nil) {
             self.name = name
             self.start = start
             self.expect = expect
             self.continuous = continuous
             self.crossfade = crossfade
+            self.lateFrames = lateFrames
+            self.maxMs = maxMs
         }
     }
 
