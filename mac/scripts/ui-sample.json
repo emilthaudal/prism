@@ -178,8 +178,18 @@
       "shot": "handled-heading-hover"
     },
     {
-      "name": "pointer away from the Handled heading",
-      "at": 48, "do": "hover", "target": ""
+      "name": "hover Show all under Handled",
+      "at": 47, "do": "hover", "target": "handled-all",
+      "shot": "handled-show-all-hover"
+    },
+    {
+      "name": "hover the Landed heading",
+      "at": 49, "do": "hover", "target": "landed",
+      "shot": "landed-heading-hover"
+    },
+    {
+      "name": "pointer away from the Landed heading",
+      "at": 51, "do": "hover", "target": ""
     }
   ]
 }

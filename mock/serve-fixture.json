@@ -468,6 +468,11 @@
       "track": "121",
       "kind": "verified",
       "did": "Ran verify on queue-api: pass"
-    }
+    },
+    { "id": "e503", "at": "2026-11-24T13:30:00Z", "track": "121", "kind": "nudged", "did": "Reminded queue-api that the retry test was still red" },
+    { "id": "e504", "at": "2026-11-24T13:34:00Z", "track": "108", "kind": "verified", "did": "Ran verify on weekly-brief: pass" },
+    { "id": "e505", "at": "2026-11-24T13:41:00Z", "track": "121", "kind": "verified", "did": "Ran verify on pantry-api: pass" },
+    { "id": "e506", "at": "2026-11-24T13:48:00Z", "track": "108", "kind": "nudged", "did": "Reminded weekly-brief to push its branch" },
+    { "id": "e507", "at": "2026-11-24T13:55:00Z", "track": "121", "kind": "verified", "did": "Ran verify on recipe-search: pass" }
   ]
 }

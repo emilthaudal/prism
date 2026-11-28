@@ -81,7 +81,7 @@ public struct DemoScript: Decodable, Equatable, Sendable {
         /// Takes back the pending answer to the question, or the newest one, as z does.
         case undo(String?)
         case mode(track: String, mode: String)
-        /// `handled` folds the board's Handled list, `track:ID` a track's sessions in the sidebar.
+        /// `handled` and `landed` fold the board's lists, `track:ID` a track's sessions in the sidebar.
         case fold(String)
         /// The pointer rests on this target (`card:ID`, `row:desk`, `row:track:ID`, `row:session:ID`, `send`); empty moves it away.
         /// Set in the app, never by a real pointer.

@@ -159,11 +159,18 @@ public struct MotionCheck: Sendable {
         if !moved.isEmpty {
             let region = around(moved, width: width, count: before.count)
             let endInk = max(ink(before, region, width: width), ink(after, region, width: width))
-            for f in window where !f.idle && f.t >= first && f.t < last {
+            let steady = window.filter { !$0.idle && $0.t >= first && $0.t < last }
+            // Under Reduce Motion the layout may jump while a row fades: the first frame of the run is that jump, so
+            // the frames after it are judged against it, and only something that slides after it counts as a move.
+            let jumped = reduceMotion ? steady.first.map { pictures[$0.picture] } : nil
+            let fading = jumped.map { start in (0..<start.count).filter { !mask[$0] && abs(Int(start[$0]) - Int(after[$0])) > tolerance } } ?? moved
+            for f in steady {
                 let picture = pictures[f.picture]
                 if !step.crossfade, isDouble(picture, before: before, after: after, moved),
                    Double(ink(picture, region, width: width)) >= doubleInk * Double(endInk) { r.doubles += 1 }
-                if isMove(picture, before: before, after: after, moved) { r.moves += 1 }
+                if let jumped, f.t > first {
+                    if !fading.isEmpty, isMove(picture, before: jumped, after: after, fading) { r.moves += 1 }
+                } else if jumped == nil, isMove(picture, before: before, after: after, moved) { r.moves += 1 }
             }
         }
         r.problems = problems(r, step: step, reduceMotion: reduceMotion, film: film)

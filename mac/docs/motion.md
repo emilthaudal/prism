@@ -30,7 +30,8 @@ It exits 1 when a step fails. A line reads:
   fold and a list reorder; the edge test tells them apart, since a slide or a cross-fade shows one copy (0.9 to 1.03 on the
   fixture) and two copies show nearly twice the edges. A step with `"crossfade": true` allows a double.
 - **moves** (fails with Reduce Motion): frames that are not a blend of start and end, meaning something slid or grew
-  instead of fading.
+  instead of fading. The run's first frame is the layout jumping, which Reduce Motion allows, so the frames after it are
+  judged against that frame, not against the start (EMI-490).
 - **duration** (fails): a step with `expect` must last no longer than it asks for plus two 60 Hz frames, and at least 40 %
   of it (an ease's last stretch moves less than a picture pixel, so a 0.25 s ease is visible for about 0.1 to 0.2 s). `expect: 0`
   means one frame at most. Both bounds give one of the film's own frame intervals more (8 ms at 120 fps, 33 ms when a busy Mac
