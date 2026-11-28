@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -756,5 +757,40 @@ func TestDiffStatsRunNothingTheRepoConfigures(t *testing.T) {
 	}
 	if c == nil || c.Branch != "feat" || c.Added != 3 || c.Files != 2 || c.Merged {
 		t.Errorf("changes: %+v", c)
+	}
+}
+
+// The cache folds a transcript read in pieces, a line cut in half included, to the same entries
+// as one read of the whole file, and folds a replaced file again from the start.
+func TestTranscriptCacheFoldsAppendsLikeAWholeRead(t *testing.T) {
+	var lines []string
+	for i := range 40 {
+		lines = append(lines,
+			fmt.Sprintf(`{"type":"user","timestamp":"2026-11-24T13:%02d:00Z","message":{"content":"prompt %d"}}`, i, i),
+			fmt.Sprintf(`{"type":"assistant","timestamp":"2026-11-24T13:%02d:01Z","message":{"content":[{"type":"text","text":"on %d"},{"type":"tool_use","id":"t%d","name":"Bash","input":{}}]}}`, i, i, i),
+			fmt.Sprintf(`{"type":"user","timestamp":"2026-11-24T13:%02d:02Z","message":{"content":[{"type":"tool_result","tool_use_id":"t%d","content":"ok"}]}}`, i, i),
+			fmt.Sprintf(`{"type":"assistant","timestamp":"2026-11-24T13:%02d:03Z","message":{"content":[{"type":"text","text":"done %d"}]}}`, i, i))
+	}
+	all := strings.Join(lines, "\n") + "\n"
+	path := filepath.Join(t.TempDir(), "s.jsonl")
+	var c transcriptCache
+	for _, cut := range []int{0, 517, 518, 2048, len(all) / 2, len(all) - 1, len(all)} {
+		if err := os.WriteFile(path, []byte(all[:cut]), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := c.entries(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		whole := all[:strings.LastIndex(all[:cut], "\n")+1]
+		if want, _ := foldLines(nil, strings.NewReader(whole)); !reflect.DeepEqual(got, want) && !(len(got) == 0 && len(want) == 0) {
+			t.Fatalf("after %d bytes: %d entries, a whole read has %d", cut, len(got), len(want))
+		}
+	}
+	if err := os.WriteFile(path, []byte(lines[0]+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := c.entries(path); len(got) != 1 || got[0].Text != "prompt 0" {
+		t.Errorf("replaced file: %+v", got)
 	}
 }
