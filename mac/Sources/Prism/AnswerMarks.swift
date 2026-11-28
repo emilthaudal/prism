@@ -10,8 +10,6 @@ import SwiftUI
 struct AskedRail: View {
     var entries: [ConversationEntry]
     var model: WindowModel
-    @State private var pointed: String?
-    @Environment(\.accessibilityReduceMotion) private var reduce
 
     var body: some View {
         GeometryReader { geo in
@@ -21,7 +19,7 @@ struct AskedRail: View {
             let byID = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
             ForEach(MarkGroups.group(entries, span: span, minGap: Self.markHeight)) { group in
                 if let entry = byID[group.target] {
-                    mark(entry, ids: group.ids)
+                    RailMark(entry: entry, ids: group.ids, model: model, height: Self.markHeight)
                         .frame(width: geo.size.width, alignment: .trailing)
                         .position(x: geo.size.width / 2, y: top + group.y)
                 }
@@ -32,11 +30,21 @@ struct AskedRail: View {
     }
 
     private static let markHeight = Theme.iconTarget + Space.xs
+}
 
-    private func mark(_ entry: ConversationEntry, ids: [String]) -> some View {
-        let on = pointed == entry.id || model.hoveredTarget == "mark:\(entry.id)"
+/// One bar of the rail. Its own view, so a message scrolling on or off screen redraws the bars and not the grouping.
+private struct RailMark: View {
+    var entry: ConversationEntry
+    var ids: [String]
+    var model: WindowModel
+    var height: CGFloat
+    @State private var pointerOver = false
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    var body: some View {
+        let on = pointerOver || model.hoveredTarget == "mark:\(entry.id)"
         let here = ids.contains { model.askedVisible.contains($0) }
-        return Button {
+        Button {
             model.askedCursor = entry.id
             model.jump(to: entry.id)
         } label: {
@@ -58,14 +66,12 @@ struct AskedRail: View {
                     .frame(width: on ? Space.l : (here ? Space.m : Space.s), height: Theme.laneChip.width)
                     .frame(width: Space.l, alignment: .trailing)
             }
-            .frame(height: Self.markHeight)
+            .frame(height: height)
             .padding(.leading, Space.xs)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { over in
-            if over, model.pointerLive { pointed = entry.id } else if pointed == entry.id { pointed = nil }
-        }
+        .onHover { pointerOver = $0 && model.pointerLive }
         .animation(Motion.moves(Motion.quick, reduce: reduce), value: on)
         .animation(Motion.moves(Motion.quick, reduce: reduce), value: here)
         .accessibilityLabel("Go to: \(entry.text)")

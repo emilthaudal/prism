@@ -42,6 +42,13 @@ private struct Arrives: ViewModifier {
     }
 }
 
+/// How a jump settles: one farther than `run` entries skips without animation to `run` short of its target and settles
+/// over the rest, since an animated scroll lays out every row it passes.
+private enum Settle {
+    static let run = 4
+    static let skipFrame = 1.0 / 60
+}
+
 /// A conversation's scroll view. A new entry comes up into its place as it fades in while the view follows to the bottom, both only when the
 /// list had entries before, Emil is at the bottom and the window is on screen. Otherwise entries are inserted without
 /// animation, and the view stays where Emil left it.
@@ -62,6 +69,9 @@ struct ArrivalScroll<Content: View>: View {
     @State private var pinned = true
     @State private var userScrolling = false
     @State private var position = ScrollPosition()
+    /// How far down the content the view's top edge is, 0 to 1, so a jump knows which side it comes from. Read from the
+    /// geometry, not scroll targets: a lazy stack laid out as scroll targets kept every row the 200-entry cap dropped.
+    @State private var topFraction: Double?
 
     var body: some View {
         let animate = windowVisible && pinned && !before.isEmpty
@@ -91,10 +101,14 @@ struct ArrivalScroll<Content: View>: View {
             recent = animate ? Set(new).subtracting(old) : []
             before = new
         }
+        .onScrollGeometryChange(for: Double.self) { $0.contentSize.height > 0 ? $0.visibleRect.minY / $0.contentSize.height : 0 } action: { _, top in
+            topFraction = top
+        }
         .onChange(of: jumpRequest) { _, request in
             guard let request else { return }
+            let from = pinned ? ids.count - 1 : topIndex
             pinned = false
-            withAnimation(Motion.moves(Motion.settle, reduce: reduce)) { position.scrollTo(id: request.entry, anchor: .top) }
+            settle(from: from, to: ids.firstIndex(of: request.entry)) { position.scrollTo(id: request.entry, anchor: .top) }
         }
         .onChange(of: pinned) { _, now in pinnedChanged(now) }
         .onChange(of: scrollRequest) { _, request in
@@ -106,10 +120,29 @@ struct ArrivalScroll<Content: View>: View {
                 pinned = true
                 position.scrollTo(edge: .bottom)
             case "latest":
+                let from = pinned ? ids.count - 1 : topIndex
                 pinned = true
-                withAnimation(Motion.moves(Motion.settle, reduce: reduce)) { position.scrollTo(edge: .bottom) }
+                settle(from: from, to: ids.count - 1) { position.scrollTo(edge: .bottom) }
             default: break
             }
         }
+    }
+
+    /// The entry at the view's top edge, estimated from how far down the content it is.
+    private var topIndex: Int? {
+        topFraction.map { min(max(Int($0 * Double(ids.count)), 0), max(ids.count - 1, 0)) }
+    }
+
+    /// Animates `scroll` with the settle token, first skipping to within `Settle.run` entries of `to` when it is farther
+    /// from `from` than that. An unknown `from` counts as the bottom, where the conversation usually is.
+    private func settle(from: Int?, to: Int?, _ scroll: @escaping () -> Void) {
+        let animation = Motion.moves(Motion.settle, reduce: reduce)
+        guard let to, !ids.isEmpty else { return withAnimation(animation, scroll) }
+        let from = from ?? ids.count - 1
+        guard abs(to - from) > Settle.run else { return withAnimation(animation, scroll) }
+        let near = from > to ? min(to + Settle.run, ids.count - 1) : max(to - Settle.run, 0)
+        position.scrollTo(id: ids[near], anchor: .top)
+        // The skip has to be drawn before the settle starts from it; the next turn of the run loop is too soon.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Settle.skipFrame) { withAnimation(animation, scroll) }
     }
 }

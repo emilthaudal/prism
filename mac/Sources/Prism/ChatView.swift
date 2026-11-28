@@ -1,6 +1,23 @@
 import DeskCore
 import SwiftUI
 
+/// The conversation's scroll view, reading the model's scroll and jump requests in its own body: read in ChatView's, each
+/// jump evaluated every row on screen again.
+private struct ChatScroll<Content: View>: View {
+    var ids: [String]
+    var model: WindowModel
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ArrivalScroll(ids: ids, scrollRequest: model.scrollRequest, windowVisible: model.windowVisible, jumpRequest: model.jumpRequest, pinnedChanged: { pinned in
+            model.scrolledUp = !pinned
+            if pinned { model.askedCursor = nil }
+        }) {
+            content
+        }
+    }
+}
+
 /// The desk's chat: Emil's messages, the desk's answers with their tool steps folded, and reports as cards.
 struct ChatView: View {
     var store: DeskStore
@@ -9,10 +26,7 @@ struct ChatView: View {
     var body: some View {
         let s = store.snapshot
         let board = store.board
-        ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible, jumpRequest: model.jumpRequest, pinnedChanged: { pinned in
-            model.scrolledUp = !pinned
-            if pinned { model.askedCursor = nil }
-        }) {
+        ChatScroll(ids: s.conversation.map(\.id), model: model) {
             LazyVStack(alignment: .leading, spacing: Space.none) {
                 let kinds = s.conversation.map { Self.kind(of: $0) }
                 ForEach(Array(s.conversation.enumerated()), id: \.element.id) { i, entry in
@@ -44,8 +58,6 @@ struct ChatView: View {
                     .arrives(entry.id)
                 }
             }
-            // Each entry is a place a jump can land.
-            .scrollTargetLayout()
             .padding(.horizontal, Space.m)
             .padding(.vertical, Space.xl)
             .frame(maxWidth: Theme.chatMaxWidth)

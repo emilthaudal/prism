@@ -9,6 +9,11 @@ import Testing
         #expect(DecisionRefs.ids(in: "AD41 D41a D0 D 12 EMI-404 D") == [])
     }
 
+    @Test func wordEdgesCountLettersBeyondASCII() {
+        #expect(DecisionRefs.ids(in: "\u{00E9}D41 D42\u{00E9} \u{2014}D43\u{2014} D44") == ["D43", "D44"])
+        #expect(DecisionRefs.ids(in: "no decisions named here, only d41") == [])
+    }
+
     @Test func chipsOnlyForQuestionsTheSnapshotHolds() {
         let open = Question(id: "D41", question: "Merge?", options: [Option(label: "merge"), Option(label: "wait")], recommended: 0)
         let done = Question(id: "D42", question: "Install?", options: [Option(label: "now"), Option(label: "tonight")], recommended: 1, answer: AnswerRecord(option: 1, by: "emil"))

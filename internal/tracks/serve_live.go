@@ -234,10 +234,11 @@ func apiQuestionOf(q store.Question, trackID map[string]string) apiQuestion {
 
 // liveSource serves tracks.db and the headless desk.
 type liveSource struct {
-	desk  *deskRunner
-	diffs *diffCache
-	stamp string
-	dirty atomic.Bool
+	desk        *deskRunner
+	diffs       *diffCache
+	transcripts transcriptCache
+	stamp       string
+	dirty       atomic.Bool
 }
 
 func newLiveSource(desk *deskRunner) *liveSource {
@@ -722,14 +723,9 @@ func (l *liveSource) transcript(ctx context.Context, id string) (any, error) {
 		}
 		return map[string]any{"entries": entries}, nil
 	}
-	f, err := os.Open(paths[0])
+	entries, err := l.transcripts.entries(paths[0])
 	if err != nil {
 		return nil, err
-	}
-	defer f.Close()
-	entries = foldTranscript(f)
-	if len(entries) > transcriptMax {
-		entries = entries[len(entries)-transcriptMax:]
 	}
 	return map[string]any{"entries": entries}, nil
 }
@@ -741,44 +737,118 @@ type apiTranscriptEntry struct {
 	At    time.Time `json:"at"`
 }
 
-// foldTranscript turns transcript lines into entries: a user prompt is one entry, and the
-// assistant's messages up to the next prompt are one, their tool calls counted as steps.
-func foldTranscript(r io.Reader) []apiTranscriptEntry {
-	var out []apiTranscriptEntry
-	sc := bufio.NewScanner(r)
-	sc.Buffer(make([]byte, 1<<20), 64<<20)
-	for sc.Scan() {
-		var rec struct {
-			Type      string    `json:"type"`
-			Timestamp time.Time `json:"timestamp"`
-			IsMeta    bool      `json:"isMeta"`
-			Message   struct {
-				Content json.RawMessage `json:"content"`
-			} `json:"message"`
+// foldLines folds r's complete transcript lines onto out and returns how many bytes they took: a
+// user prompt is one entry, and the assistant's messages up to the next prompt are one, their
+// tool calls counted as steps. A last line without its newline is left for the next read: the
+// session may be midway through writing it.
+func foldLines(out []apiTranscriptEntry, r io.Reader) ([]apiTranscriptEntry, int64) {
+	br := bufio.NewReaderSize(r, 64<<10)
+	var n int64
+	for {
+		line, err := br.ReadBytes('\n')
+		if err != nil {
+			return out, n
 		}
-		if json.Unmarshal(sc.Bytes(), &rec) != nil || rec.IsMeta {
-			continue
+		n += int64(len(line))
+		out = foldLine(out, line)
+	}
+}
+
+func foldLine(out []apiTranscriptEntry, line []byte) []apiTranscriptEntry {
+	var rec struct {
+		Type      string    `json:"type"`
+		Timestamp time.Time `json:"timestamp"`
+		IsMeta    bool      `json:"isMeta"`
+		Message   struct {
+			Content json.RawMessage `json:"content"`
+		} `json:"message"`
+	}
+	if json.Unmarshal(line, &rec) != nil || rec.IsMeta {
+		return out
+	}
+	text, steps, prompt := contentOf(rec.Message.Content)
+	switch rec.Type {
+	case "user":
+		if prompt && strings.TrimSpace(text) != "" {
+			out = append(out, apiTranscriptEntry{Role: "user", Text: text, At: apiTime(rec.Timestamp)})
 		}
-		text, steps, prompt := contentOf(rec.Message.Content)
-		switch rec.Type {
-		case "user":
-			if prompt && strings.TrimSpace(text) != "" {
-				out = append(out, apiTranscriptEntry{Role: "user", Text: text, At: apiTime(rec.Timestamp)})
-			}
-		case "assistant":
-			if text == "" && steps == 0 {
-				continue
-			}
-			if n := len(out); n > 0 && out[n-1].Role == "assistant" {
-				out[n-1].Text = joinText(out[n-1].Text, text)
-				out[n-1].Steps += steps
-				out[n-1].At = apiTime(rec.Timestamp)
-				continue
-			}
-			out = append(out, apiTranscriptEntry{Role: "assistant", Text: text, Steps: steps, At: apiTime(rec.Timestamp)})
+	case "assistant":
+		if text == "" && steps == 0 {
+			return out
 		}
+		if n := len(out); n > 0 && out[n-1].Role == "assistant" {
+			out[n-1].Text = joinText(out[n-1].Text, text)
+			out[n-1].Steps += steps
+			out[n-1].At = apiTime(rec.Timestamp)
+			return out
+		}
+		out = append(out, apiTranscriptEntry{Role: "assistant", Text: text, Steps: steps, At: apiTime(rec.Timestamp)})
 	}
 	return out
+}
+
+// transcriptCache keeps the folded tail of the transcripts read lately and how far each was
+// read, so the app asking again after a session wrote more folds only the new lines: a long
+// session's transcript is tens of megabytes, and the app asks on each of the session's updates.
+type transcriptCache struct {
+	mu sync.Mutex
+	m  map[string]*foldedTranscript
+}
+
+type foldedTranscript struct {
+	read    int64
+	entries []apiTranscriptEntry
+	used    time.Time
+}
+
+// transcriptCacheMax is how many transcripts the cache keeps folded.
+const transcriptCacheMax = 8
+
+// entries is the newest transcriptMax entries of the transcript at path.
+func (c *transcriptCache) entries(path string) ([]apiTranscriptEntry, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.m == nil {
+		c.m = map[string]*foldedTranscript{}
+	}
+	t := c.m[path]
+	// A file shorter than what was read was replaced: fold it again from the start.
+	if t == nil || fi.Size() < t.read {
+		t = &foldedTranscript{}
+	}
+	if fi.Size() > t.read {
+		if _, err := f.Seek(t.read, io.SeekStart); err != nil {
+			return nil, err
+		}
+		var n int64
+		t.entries, n = foldLines(t.entries, io.LimitReader(f, fi.Size()-t.read))
+		t.read += n
+		// Folding only ever changes the last entry, so the older ones can go.
+		if len(t.entries) > transcriptMax {
+			t.entries = slices.Clone(t.entries[len(t.entries)-transcriptMax:])
+		}
+	}
+	t.used = time.Now()
+	c.m[path] = t
+	if len(c.m) > transcriptCacheMax {
+		oldest := path
+		for p, e := range c.m {
+			if e.used.Before(c.m[oldest].used) {
+				oldest = p
+			}
+		}
+		delete(c.m, oldest)
+	}
+	return slices.Clone(t.entries), nil
 }
 
 // contentOf reads a message's content: its text, its tool calls, and whether it is a prompt

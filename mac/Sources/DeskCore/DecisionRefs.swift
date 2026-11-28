@@ -5,12 +5,13 @@ import Foundation
 public enum DecisionRefs {
     /// The D ids `text` names, each once, in the order they first appear. "D41" counts; "AD41", "D41a" and "D0" don't.
     public static func ids(in text: String) -> [String] {
+        // Runs for every conversation row a scroll realizes, so text without a D costs one byte scan.
+        guard text.utf8.contains(UInt8(ascii: "D")) else { return [] }
         var out: [String] = []
         let chars = Array(text)
         var i = 0
         while i < chars.count {
-            let atWordStart = i == 0 || !(chars[i - 1].isLetter || chars[i - 1].isNumber)
-            guard chars[i] == "D", atWordStart else { i += 1; continue }
+            guard chars[i] == "D", i == 0 || !(chars[i - 1].isLetter || chars[i - 1].isNumber) else { i += 1; continue }
             var j = i + 1
             while j < chars.count, chars[j].isASCII, chars[j].isNumber { j += 1 }
             let atWordEnd = j == chars.count || !(chars[j].isLetter || chars[j].isNumber)
