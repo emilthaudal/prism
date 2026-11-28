@@ -76,8 +76,9 @@ builds load the machine: a few late frames or repeated frames can come from that
 (old and new content cross-fade as the height settles, the board card's ring fades across), "press 1" and "z" (answer, then Undo:
 the options fade as the height settles to the countdown row, and back), and "answer D14 and D15 loads" (the countdown sends at
 5.0 s and the next decision loads in one height change). The send lands on the deadline itself, not on the 0.2 s tick, and the
-card with its ring leaves in the same frame. The ring drains in one linear animation (`ProgressView(timerInterval:)` draws a
-spinner on macOS, not a ring); the digit swaps once a second. Run it with `REDUCE_MOTION=1` too: heights jump, fades stay,
+card with its ring leaves in the same frame. The ring drains in one linear Core Animation animation on a `CAShapeLayer` (`DrainRing`; the render server runs it,
+where a SwiftUI `trim` animation walked and redrew the whole window's view graph on every frame, about half of the main
+thread for the five seconds, and `ProgressView(timerInterval:)` draws a spinner on macOS, not a ring); the digit swaps once a second. Run it with `REDUCE_MOTION=1` too: heights jump, fades stay,
 the ring still drains.
 
 ## How it records, and what the probe found (26 Nov 2026)

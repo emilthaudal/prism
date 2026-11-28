@@ -36,9 +36,6 @@ enum Motion {
     /// One turn of the sidebar's working ring.
     static let spinPeriod: TimeInterval = 1
 
-    /// A ring that drains in one go, linear because it is a clock.
-    static func drain(_ seconds: TimeInterval) -> Animation { .linear(duration: seconds) }
-
     /// A layout move: the token, or nothing under Reduce Motion.
     static func moves(_ animation: Animation, reduce: Bool) -> Animation? { reduce ? nil : animation }
 
