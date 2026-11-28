@@ -4,7 +4,7 @@
     scripts/stress-fixture.py OUTDIR
 
 OUTDIR gets three folders, each a serve fixture with its serve-transcripts.json beside it (FixtureClient reads both):
-  big/    40 tracks, 120 sessions with subagents, 30 open questions, 2000 chat messages with long Markdown and code
+  big/    40 tracks, 120 sessions with subagents, 30 open questions, 2000 chat messages (154 of them Emil's) with long Markdown and code
   worst/  very long unbroken names, one-letter names, emoji and non-Latin text, huge counts, missing optional fields
   empty/  zero items everywhere
 plus big/replay.json, a demo script that drops a report into the chat every half second (--demo-script).
@@ -20,6 +20,8 @@ WORDS = ["pantry", "recipe", "search", "queue", "label", "invoice", "carrier", "
 PEOPLE = ["Alex", "Sam"]
 MODES = ["focus", "focus", "background", "background", "background", "waiting", "parked"]
 STATUSES = ["working", "working", "working", "done", "idle", "blocked", "stopped", "error"]
+# About one message in thirteen is Emil's, as in a long real conversation (153 of 1,870).
+EMIL_EVERY = 13
 DOT, MINUS = chr(0xB7), chr(0x2212)
 
 
@@ -96,7 +98,7 @@ def big():
                           "recommended": q % 3, "evidence": [{"text": "CI green", "source": "CircleCI #%d" % (48000 + q)}, {"text": "No code freeze", "source": "Gatekeeper"}],
                           "links": ["https://github.com/acme/%s/pull/%d" % (name(j % 40), 500 + q)], "created_at": at(q), "answer": None})
     for m in range(2000):
-        role = ["emil", "desk", "desk", "report"][m % 4]
+        role = "emil" if m % EMIL_EVERY == 0 else ["desk", "desk", "report"][m % 3]
         e = {"id": "m%05d" % m, "at": at(2000 - m), "role": role}
         if role == "emil":
             e["text"] = "take %s, one session per repo, stop at PRs" % name(m % 40)

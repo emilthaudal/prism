@@ -240,6 +240,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return true
             }
         }
+        // ⌘↓ goes to the newest message, unless it is moving the cursor in a message being typed.
+        if flags.subtracting([.numericPad, .function]) == .command, event.keyCode == 125,
+           !(editing && !model.draft.isEmpty), model.session(in: store.snapshot) == nil {
+            model.askedCursor = nil
+            model.scroll("latest")
+            return true
+        }
         guard let command = Keys.command(for: key, editing: editing) else { return false }
         // ⌘↩ sends a message being typed to the desk; the staged answers go when there is none.
         if command == .sendStaged, editing, !model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
