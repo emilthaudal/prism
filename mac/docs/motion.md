@@ -53,7 +53,8 @@ their own then, such as a working session's activity), `tail` and timed `steps`.
 - `wait`: nothing; the step names what happens on its own (the countdown sending).
 
 Optional: `expect` (seconds the animation asks for), `continuous` (changes on its own, such as the countdown: its spells
-are not replays), `crossfade`, and `again` (plays the action again that many seconds later in the same step, to see
+are not replays), `crossfade`, `lateFrames` and `maxMs` (this step may show that many late frames, or take that many milliseconds,
+before it fails; the default is none, and `expect` plus two 60 Hz frames: the composer's glass morph at send is allowed some, EMI-496), and `again` (plays the action again that many seconds later in the same step, to see
 a change that fires twice fail).
 
 `Prism --fixture F --demo-script S` plays a script without recording. With `--motion-dir D` it waits for the
@@ -76,8 +77,9 @@ builds load the machine: a few late frames or repeated frames can come from that
 (old and new content cross-fade as the height settles, the board card's ring fades across), "press 1" and "z" (answer, then Undo:
 the options fade as the height settles to the countdown row, and back), and "answer D14 and D15 loads" (the countdown sends at
 5.0 s and the next decision loads in one height change). The send lands on the deadline itself, not on the 0.2 s tick, and the
-card with its ring leaves in the same frame. The ring drains in one linear animation (`ProgressView(timerInterval:)` draws a
-spinner on macOS, not a ring); the digit swaps once a second. Run it with `REDUCE_MOTION=1` too: heights jump, fades stay,
+card with its ring leaves in the same frame. The ring drains in one linear Core Animation animation on a `CAShapeLayer` (`DrainRing`; the render server runs it,
+where a SwiftUI `trim` animation walked and redrew the whole window's view graph on every frame, about half of the main
+thread for the five seconds, and `ProgressView(timerInterval:)` draws a spinner on macOS, not a ring); the digit swaps once a second. Run it with `REDUCE_MOTION=1` too: heights jump, fades stay,
 the ring still drains.
 
 ## How it records, and what the probe found (26 Nov 2026)

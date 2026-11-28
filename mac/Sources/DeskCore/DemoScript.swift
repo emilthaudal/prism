@@ -19,20 +19,26 @@ public struct DemoScript: Decodable, Equatable, Sendable {
         public var continuous: Bool
         /// Old and new show together on purpose, so it is not a double.
         public var crossfade: Bool
+        /// Late frames the step may show before the motion check fails it; nil allows none.
+        public var lateFrames: Int?
+        /// The longest the step may take on screen in milliseconds; nil allows `expect` plus two 60 Hz frames.
+        public var maxMs: Double?
         /// Plays the action again this many seconds later inside the same step, as a change that fires twice would.
         public var again: Double?
         /// `make ui-check`: takes a still of the window under this name once the action has settled.
         public var shot: String?
 
-        private enum CodingKeys: String, CodingKey { case name, at, `do`, event, events, direction, question, option, track, mode, fold, target, field, item, text, entry, expect, continuous, crossfade, again, shot }
+        private enum CodingKeys: String, CodingKey { case name, at, `do`, event, events, direction, question, option, track, mode, fold, target, field, item, text, entry, expect, continuous, crossfade, lateFrames, maxMs, again, shot }
 
-        public init(name: String, at: Double, action: Action, expect: Double? = nil, continuous: Bool = false, crossfade: Bool = false, again: Double? = nil, shot: String? = nil) {
+        public init(name: String, at: Double, action: Action, expect: Double? = nil, continuous: Bool = false, crossfade: Bool = false, lateFrames: Int? = nil, maxMs: Double? = nil, again: Double? = nil, shot: String? = nil) {
             self.name = name
             self.at = at
             self.action = action
             self.expect = expect
             self.continuous = continuous
             self.crossfade = crossfade
+            self.lateFrames = lateFrames
+            self.maxMs = maxMs
             self.again = again
             self.shot = shot
         }
@@ -44,6 +50,8 @@ public struct DemoScript: Decodable, Equatable, Sendable {
             expect = try c.decodeIfPresent(Double.self, forKey: .expect)
             continuous = try c.decodeIfPresent(Bool.self, forKey: .continuous) ?? false
             crossfade = try c.decodeIfPresent(Bool.self, forKey: .crossfade) ?? false
+            lateFrames = try c.decodeIfPresent(Int.self, forKey: .lateFrames)
+            maxMs = try c.decodeIfPresent(Double.self, forKey: .maxMs)
             again = try c.decodeIfPresent(Double.self, forKey: .again)
             shot = try c.decodeIfPresent(String.self, forKey: .shot)
             switch try c.decode(String.self, forKey: .do) {

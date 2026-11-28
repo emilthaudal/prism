@@ -684,27 +684,17 @@ struct OptionRow: View {
 struct CountdownLine: View {
     var text: (Int) -> String
     @State private var end: Date
-    @State private var level: Double
 
     init(deadline: Date, now: Date, text: @escaping (Int) -> String) {
         let left = max(0, deadline.timeIntervalSince(now))
         self.text = text
         _end = State(initialValue: Date().addingTimeInterval(left))
-        _level = State(initialValue: left / AnswerQueue.undoWindow)
     }
 
     var body: some View {
         HStack(spacing: Space.s) {
-            Circle()
-                .stroke(Color.primary.opacity(0.12), lineWidth: Theme.ringWidth)
-                .overlay {
-                    Circle()
-                        .trim(from: 0, to: level)
-                        .stroke(.tint, style: StrokeStyle(lineWidth: Theme.ringWidth, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                }
+            DrainRing(seconds: max(0, end.timeIntervalSinceNow))
                 .frame(width: Theme.ringSize, height: Theme.ringSize)
-                .onAppear { withAnimation(Motion.drain(max(0, end.timeIntervalSinceNow))) { level = 0 } }
             TimelineView(.explicit(ticks)) { context in
                 Text(text(max(0, Int(end.timeIntervalSince(context.date).rounded(.up))))).monospacedDigit()
             }
@@ -714,6 +704,71 @@ struct CountdownLine: View {
     /// One tick just after each whole second left, so the digit changes when it should and not a frame early.
     private var ticks: [Date] {
         (1...Int(AnswerQueue.undoWindow)).map { end.addingTimeInterval(0.05 - Double($0)) }.sorted()
+    }
+}
+
+/// The ring as a layer: it drains by a Core Animation animation the render server runs, so the window's view graph is
+/// not walked and redrawn on every frame of the countdown.
+private struct DrainRing: NSViewRepresentable {
+    /// What is left of the undo window when the ring appears.
+    var seconds: TimeInterval
+
+    func makeNSView(context: Context) -> RingView { RingView(seconds: seconds) }
+
+    func updateNSView(_ view: RingView, context: Context) {
+        view.track.strokeColor = Color.primary.opacity(0.12).resolve(in: context.environment).cgColor
+        view.ring.strokeColor = Color.accentColor.resolve(in: context.environment).cgColor
+    }
+
+    final class RingView: NSView {
+        let track = CAShapeLayer()
+        let ring = CAShapeLayer()
+        private let seconds: TimeInterval
+
+        init(seconds: TimeInterval) {
+            self.seconds = seconds
+            super.init(frame: .zero)
+            wantsLayer = true
+            for layer in [track, ring] {
+                layer.fillColor = nil
+                layer.lineWidth = Theme.ringWidth
+                self.layer?.addSublayer(layer)
+            }
+            ring.lineCap = .round
+            ring.strokeEnd = 0
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        override var isFlipped: Bool { true }
+
+        override func layout() {
+            super.layout()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            let path = CGPath(ellipseIn: bounds.insetBy(dx: Theme.ringWidth / 2, dy: Theme.ringWidth / 2), transform: nil)
+            for layer in [track, ring] {
+                layer.bounds = bounds
+                layer.position = CGPoint(x: bounds.midX, y: bounds.midY)
+                layer.path = path
+            }
+            // The path starts at three o'clock; the ring starts at twelve.
+            ring.transform = CATransform3DMakeRotation(-.pi / 2, 0, 0, 1)
+            CATransaction.commit()
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            ring.removeAnimation(forKey: "drain")
+            guard window != nil, seconds > 0 else { return }
+            let drain = CABasicAnimation(keyPath: "strokeEnd")
+            drain.fromValue = seconds / AnswerQueue.undoWindow
+            drain.toValue = 0
+            drain.duration = seconds
+            drain.timingFunction = CAMediaTimingFunction(name: .linear)
+            ring.add(drain, forKey: "drain")
+        }
     }
 }
 

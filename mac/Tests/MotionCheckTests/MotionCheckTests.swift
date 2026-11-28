@@ -112,6 +112,31 @@ private func fade(_ t: Double, from: Double, to: Double) -> [UInt8] {
         #expect(report.steps[0].problems == ["hitch"])
     }
 
+    @Test func aStepMayDeclareHowManyLateFramesItAllows() {
+        func lateRun(gaps: [ClosedRange<Double>], lateFrames: Int?) -> MotionCheck.StepResult {
+            var ticks = stride(from: 0.0, to: 2, by: 1.0 / 120).map { $0 }
+            ticks.removeAll { t in gaps.contains { $0.contains(t) } }
+            let step = Timings.Step(name: "card leaves", start: 1, expect: 0.2, lateFrames: lateFrames)
+            return run(ticks: ticks, steps: [step]) { fade($0, from: 1.01, to: 1.15) }.steps[0]
+        }
+        let two = [1.031...1.069, 1.091...1.129]
+        let three = two + [1.151...1.189]
+        #expect(lateRun(gaps: two, lateFrames: 2).late == 2)
+        #expect(lateRun(gaps: two, lateFrames: 2).problems.isEmpty)
+        #expect(lateRun(gaps: three, lateFrames: 2).late == 3)
+        #expect(lateRun(gaps: three, lateFrames: 2).problems == ["hitch"])
+        #expect(lateRun(gaps: two, lateFrames: nil).problems == ["hitch"])
+    }
+
+    @Test func aStepMayDeclareHowLongItMayTake() {
+        let fold = { (maxMs: Double?) in
+            run(steps: [Timings.Step(name: "lands", start: 1, expect: 0.05, maxMs: maxMs)]) { fade($0, from: 1.01, to: 1.15) }.steps[0].problems
+        }
+        #expect(fold(nil) == ["duration"])
+        #expect(fold(200).isEmpty)
+        #expect(fold(100) == ["duration"])
+    }
+
     @Test func aStillFrameInsideAMoveIsAHitch() {
         let report = run(steps: [Timings.Step(name: "fold", start: 1, expect: 0.2)]) { t in
             fade(t > 1.1 && t < 1.13 ? 1.1 : t, from: 1.01, to: 1.15)

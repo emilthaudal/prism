@@ -179,7 +179,7 @@ public struct MotionCheck: Sendable {
 
     private func problems(_ r: StepResult, step: Timings.Step, reduceMotion: Bool, film: Double) -> [String] {
         var p: [String] = []
-        if r.late > 0 || r.duplicates > 0 { p.append("hitch") }
+        if r.late > (step.lateFrames ?? 0) || r.duplicates > 0 { p.append("hitch") }
         if !step.continuous && r.runs > 1 { p.append("played \(r.runs) times") }
         if r.doubles > 0 { p.append("double") }
         if reduceMotion && r.moves > 0 { p.append("moves under Reduce Motion") }
@@ -188,7 +188,7 @@ public struct MotionCheck: Sendable {
             let dur = r.duration ?? 0
             // The film measures the change to within a frame of its own at each end: 8 ms at the recorder's usual 120 fps, 33 ms
             // when other work on the Mac holds it to 30.
-            let tooLong = dur > expect + lateInterval + film
+            let tooLong = dur > (step.maxMs.map { $0 / 1000 } ?? expect + lateInterval) + film
             let tooShort = !reduceMotion && expect > 0 && dur < expect * shortestShare - film
             if tooLong || tooShort { p.append("duration") }
         }
