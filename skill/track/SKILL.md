@@ -54,7 +54,9 @@ A field you leave out stays as it is. Each field starts a line; `where:`, `asks:
 - `later:` follow-ups that go nowhere else, one per line.
 - `goal:` and `dir:` on the first turn of a `Not started.` track.
 
-Milestones are not part of `tracks card`; they have a command of their own, and only you change them. When one is reached, tick it with `tracks milestones NAME tick N` (its number, or its exact title), in the same turn as the work that reached it. `untick` takes it back. When the plan changes, write the whole list again with `set`: a title you keep stays ticked. `tracks milestones NAME` lists them. Nothing ticks a milestone for you, and a check does not either.
+Milestones are not part of `tracks card`; they have a command of their own, and only you change them. When one is reached, tick it with `tracks milestones NAME tick N` (its number, or its exact title), in the same turn as the work that reached it. `untick` takes it back. When the plan changes, write the whole list again with `set`: a title you keep stays ticked. `tracks milestones NAME` lists them. A check does not tick one.
+
+When a milestone is a PR, put its ref on it instead of in prose: `tracks milestones NAME pr N|TITLE owner/repo#N` (`unpr` takes it off). `tracks check` then keeps its state (open, green, approved, merged, closed) on the board, ticks the milestone when the PR merges, and wakes you when the state changes.
 
 Emil answers from the pane or Prism as one line, "Emil's answer to your ask N, "the ask's text": the option or his words." That line answers that one ask and nothing else. The command prints the asks, numbered. End your reply with them, so Emil can answer in one message ("1 yes, 2 B"). If it prints `closed`, Emil closed the track meanwhile: say so in your reply. If it prints `renamed to NEW`, use NEW from then on.
 

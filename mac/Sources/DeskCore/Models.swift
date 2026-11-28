@@ -72,10 +72,15 @@ public struct DeskInfo: Codable, Equatable, Sendable {
 public struct Milestone: Codable, Equatable, Sendable {
     public var title: String
     public var done: Bool
+    /// The PR this step follows as owner/repo#N, and the state tracks check last saw it in (EMI-474); nil when it has none.
+    public var pr: String?
+    public var prState: String?
 
-    public init(title: String, done: Bool = false) {
+    public init(title: String, done: Bool = false, pr: String? = nil, prState: String? = nil) {
         self.title = title
         self.done = done
+        self.pr = pr
+        self.prState = prState
     }
 }
 

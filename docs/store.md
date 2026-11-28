@@ -220,6 +220,10 @@ A `desk_orders` table holds Emil's standing orders (`tracks orders add|drop`): `
 
 To roll back, install the previous binary and set `PRAGMA user_version = 14`; the old code ignores the table.
 
+## Schema 17: a milestone's PR (EMI-474)
+
+`milestones` gains two nullable columns, `pr` (`owner/repo#N`) and `pr_state` (`open`, `green`, `approved`, `merged`, `closed`; null until `tracks check` has looked). The upgrade is two `ALTER TABLE ... ADD COLUMN` through `addedColumns`, behind the usual verified backup. `tracks milestones NAME pr N|TITLE REF` sets the ref (`unpr` clears it; a new ref starts with no state); `set` keeps the ref of a title that stays. `tracks check` asks gh for every unreached milestone's PR on open, unparked tracks, as a `pr` check does: a merged PR ticks the milestone, and any state change wakes the track's desk session (a first state of `open` is recorded silently). A gh error changes nothing. Rollback: restore the `pre-migrate-v16-*.db` backup, or with the build stopped run `ALTER TABLE milestones DROP COLUMN pr; ALTER TABLE milestones DROP COLUMN pr_state; PRAGMA user_version = 16;`.
+
 ## Schema 16: milestones (EMI-485)
 
 A `milestones` table holds a track's steps to its goal: `track_id`, `position` (from 1; the pair is the key), `title` and `reached_at` (null until reached). `tracks milestones NAME set TITLE...` replaces the whole list in one transaction, keeping `reached_at` for a title that is still on it; `tick` and `untick` take a number or an exact title; no argument lists them (`--json` for a script). Titles are one line, unique within a track, and not empty. Only the track's agent writes them. They are not rendered into the card file, and `prism server` sends them in the snapshot (docs/serve-api.md). Deleting a thread that never started deletes its milestones.

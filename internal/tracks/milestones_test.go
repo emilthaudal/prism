@@ -150,7 +150,7 @@ func TestFirstOpenOfASchema15DatabaseBacksUpAndAddsMilestones(t *testing.T) {
 	var v int
 	chk, _ := sql.Open("sqlite", "file:"+dbPath())
 	defer chk.Close()
-	if err := chk.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil || v != 16 {
+	if err := chk.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil || v != 17 {
 		t.Errorf("user_version %d %v", v, err)
 	}
 }

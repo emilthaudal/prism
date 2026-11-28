@@ -133,6 +133,9 @@ struct MilestoneCard: View {
             }
             if next { Text("next").font(.prismMeta).foregroundStyle(.secondary) }
             Spacer(minLength: 0)
+            if let pr = step.pr {
+                Text([pr, step.prState].compactMap { $0 }.joined(separator: " · ")).font(.prismMeta).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+            }
         }
     }
 }

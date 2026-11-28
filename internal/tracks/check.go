@@ -114,6 +114,22 @@ func judgeGreen(items []rollupItem) string {
 	return yes
 }
 
+// prState is where a PR is on its way: merged and closed end it, an approved review beats green
+// checks, and anything else is open.
+func prState(state, review string, rollup []rollupItem) string {
+	switch {
+	case state == "MERGED":
+		return store.PRMerged
+	case state == "CLOSED":
+		return store.PRClosed
+	case review == "APPROVED":
+		return store.PRApproved
+	case judgeGreen(rollup) == yes:
+		return store.PRGreen
+	}
+	return store.PROpen
+}
+
 func (c check) answer(b []byte) (string, error) {
 	if c.kind == "ci" {
 		var resp struct {
@@ -147,6 +163,8 @@ func (c check) answer(b []byte) (string, error) {
 		return "", err
 	}
 	switch c.want {
+	case "state":
+		return prState(pr.State, pr.ReviewDecision, pr.StatusCheckRollup), nil
 	case "approved":
 		return yesNo(pr.ReviewDecision == "APPROVED"), nil
 	case "merged":

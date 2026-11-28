@@ -11,19 +11,21 @@ import (
 	"github.com/emilthaudal/prism/internal/store"
 )
 
-const milestonesUsage = "usage: tracks milestones NAME [--json] | milestones NAME set TITLE... | milestones NAME tick N|TITLE | milestones NAME untick N|TITLE"
+const milestonesUsage = "usage: tracks milestones NAME [--json] | milestones NAME set TITLE... | milestones NAME tick N|TITLE | milestones NAME untick N|TITLE | milestones NAME pr N|TITLE OWNER/REPO#N | milestones NAME unpr N|TITLE"
 
 type milestoneJSON struct {
 	N     int    `json:"n"`
 	Title string `json:"title"`
 	Done  bool   `json:"done"`
 	At    string `json:"reached_at,omitempty"`
+	PR    string `json:"pr,omitempty"`
+	State string `json:"pr_state,omitempty"`
 }
 
 func milestonesDoc(list []store.Milestone) []milestoneJSON {
 	doc := []milestoneJSON{}
 	for i, m := range list {
-		d := milestoneJSON{N: i + 1, Title: m.Title, Done: m.Done()}
+		d := milestoneJSON{N: i + 1, Title: m.Title, Done: m.Done(), PR: m.PR, State: m.PRState}
 		if m.Done() {
 			d.At = m.ReachedAt.UTC().Format(time.RFC3339)
 		}
@@ -41,8 +43,18 @@ func printMilestones(list []store.Milestone, out io.Writer) {
 		if m.Done() {
 			box = "[x]"
 		}
-		fmt.Fprintf(out, "%d. %s %s\n", i+1, box, m.Title)
+		fmt.Fprintf(out, "%d. %s %s%s\n", i+1, box, m.Title, prSuffix(m))
 	}
+}
+
+func prSuffix(m store.Milestone) string {
+	switch {
+	case m.PR == "":
+		return ""
+	case m.PRState == "":
+		return "  (" + m.PR + ")"
+	}
+	return "  (" + m.PR + " " + m.PRState + ")"
 }
 
 // milestonesCmd is a track's own list of steps to its goal: the track's agent sets the whole
@@ -111,6 +123,24 @@ func milestonesCmd(args []string, out io.Writer) error {
 			fmt.Fprintf(out, "reached %d. %s\n", n, m.Title)
 		} else {
 			fmt.Fprintf(out, "not reached %d. %s\n", n, m.Title)
+		}
+		return nil
+	case (rest[0] == "pr" && len(rest) == 3) || (rest[0] == "unpr" && len(rest) == 2):
+		var (
+			m store.Milestone
+			n int
+		)
+		pr := ""
+		if rest[0] == "pr" {
+			pr = rest[2]
+		}
+		if err := withStore(func(st *store.Store) (err error) { m, n, err = st.SetMilestonePR(name, rest[1], pr); return err }); err != nil {
+			return explain(err)
+		}
+		if pr == "" {
+			fmt.Fprintf(out, "no PR on %d. %s\n", n, m.Title)
+		} else {
+			fmt.Fprintf(out, "%d. %s follows %s\n", n, m.Title, pr)
 		}
 		return nil
 	}
