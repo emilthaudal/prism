@@ -167,7 +167,7 @@
       "status": "working",
       "waiting_for": "",
       "activity": "Bash: bun test --shard 2/3",
-      "subagents": [{"name": "PHP 8.5 delta rerun", "status": "working"}, {"name": "lint sweep", "status": "done"}],
+      "subagents": [{"name": "PHP 8.5 delta rerun", "status": "working"}, {"name": "lint sweep", "status": "done"}, {"name": "", "status": "done"}],
       "last_answer": "",
       "changes": {
         "added": 88,
