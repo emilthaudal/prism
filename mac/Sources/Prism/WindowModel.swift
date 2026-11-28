@@ -48,6 +48,8 @@ final class WindowModel {
     var kept: [String] = []
     /// The message of Emil's the last step or mark went to; nil at the bottom.
     var askedCursor: String?
+    /// The conversation is scrolled up from its newest entry.
+    var scrolledUp = false
     /// Emil's messages on screen, for the rail.
     var askedVisible: Set<String> = []
 

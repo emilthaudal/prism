@@ -4,8 +4,9 @@ import SwiftUI
 // Ways back to an answer of Prism's that started no track: a mark per message of Emil's in the conversation's margin,
 // and a Kept section on the board for the answers he keeps.
 
-/// A bar per message of Emil's along the conversation's trailing edge, each where its message sits in the scroll. The
-/// bar of a message on screen is full ink and longer; the pointer on a bar names the message, a click goes to it.
+/// A bar per message of Emil's along the conversation's trailing edge, each where its message sits in the scroll; bars
+/// closer than one bar's height are one, which names and goes to the newest of them. The bar of a message on screen is
+/// full ink and longer; the pointer on a bar names the message, a click goes to it.
 struct AskedRail: View {
     var entries: [ConversationEntry]
     var model: WindowModel
@@ -17,19 +18,24 @@ struct AskedRail: View {
             // Clear of the title above and the last line's rise below.
             let top = Space.xxl * 2
             let span = max(geo.size.height - top - Space.xl, 1)
-            ForEach(Array(entries.enumerated()).filter { $0.element.role == "emil" }, id: \.element.id) { i, entry in
-                mark(entry)
-                    .frame(width: geo.size.width, alignment: .trailing)
-                    .position(x: geo.size.width / 2, y: top + span * (CGFloat(i) + 0.5) / CGFloat(entries.count))
+            let byID = Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            ForEach(MarkGroups.group(entries, span: span, minGap: Self.markHeight)) { group in
+                if let entry = byID[group.target] {
+                    mark(entry, ids: group.ids)
+                        .frame(width: geo.size.width, alignment: .trailing)
+                        .position(x: geo.size.width / 2, y: top + group.y)
+                }
             }
         }
         // In the column's margin, beside the bubbles' edge.
         .padding(.trailing, Space.xxs)
     }
 
-    private func mark(_ entry: ConversationEntry) -> some View {
+    private static let markHeight = Theme.iconTarget + Space.xs
+
+    private func mark(_ entry: ConversationEntry, ids: [String]) -> some View {
         let on = pointed == entry.id || model.hoveredTarget == "mark:\(entry.id)"
-        let here = model.askedVisible.contains(entry.id)
+        let here = ids.contains { model.askedVisible.contains($0) }
         return Button {
             model.askedCursor = entry.id
             model.jump(to: entry.id)
@@ -52,7 +58,7 @@ struct AskedRail: View {
                     .frame(width: on ? Space.l : (here ? Space.m : Space.s), height: Theme.laneChip.width)
                     .frame(width: Space.l, alignment: .trailing)
             }
-            .frame(height: Theme.iconTarget + Space.xs)
+            .frame(height: Self.markHeight)
             .padding(.leading, Space.xs)
             .contentShape(Rectangle())
         }
@@ -63,6 +69,32 @@ struct AskedRail: View {
         .animation(Motion.moves(Motion.quick, reduce: reduce), value: on)
         .animation(Motion.moves(Motion.quick, reduce: reduce), value: here)
         .accessibilityLabel("Go to: \(entry.text)")
+    }
+}
+
+/// Shown while the conversation is scrolled up from its newest entry: a glass button above the composer that goes back
+/// to it, and hides once there. ⌘↓ does the same.
+struct ToBottomButton: View {
+    var model: WindowModel
+    @Environment(\.accessibilityReduceMotion) private var reduce
+
+    var body: some View {
+        ZStack {
+            if model.scrolledUp {
+                Button { model.scroll("latest") } label: {
+                    Image(systemName: "arrow.down")
+                        .font(.callout.weight(.semibold))
+                        .frame(width: Space.xxl, height: Space.xxl)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .transition(Motion.fadeTransition)
+                .help("Back to the newest message (\u{2318}\u{2193})")
+                .accessibilityLabel("Go to the newest message")
+            }
+        }
+        .animation(Motion.fade, value: model.scrolledUp)
     }
 }
 

@@ -9,7 +9,10 @@ struct ChatView: View {
     var body: some View {
         let s = store.snapshot
         let board = store.board
-        ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible, jumpRequest: model.jumpRequest, backAtBottom: { model.askedCursor = nil }) {
+        ArrivalScroll(ids: s.conversation.map(\.id), scrollRequest: model.scrollRequest, windowVisible: model.windowVisible, jumpRequest: model.jumpRequest, pinnedChanged: { pinned in
+            model.scrolledUp = !pinned
+            if pinned { model.askedCursor = nil }
+        }) {
             LazyVStack(alignment: .leading, spacing: Space.none) {
                 let kinds = s.conversation.map { Self.kind(of: $0) }
                 ForEach(Array(s.conversation.enumerated()), id: \.element.id) { i, entry in
@@ -50,6 +53,9 @@ struct ChatView: View {
         }
         .scrollsBelowTitle()
         .overlay { AskedRail(entries: s.conversation, model: model) }
+        .overlay(alignment: .bottomTrailing) {
+            ToBottomButton(model: model).padding(.trailing, Space.xxl + Space.s).padding(.bottom, Space.m)
+        }
     }
 
     private static func kind(of entry: ConversationEntry) -> Rhythm.Kind {
