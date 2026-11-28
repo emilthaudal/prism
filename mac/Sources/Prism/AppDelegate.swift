@@ -68,7 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.setContentSize(NSSize(width: 380, height: 820))
             window.contentView = NSHostingView(rootView: SidebarView(store: store, model: model).background(PrismWall()))
         } else {
-            let host = NSHostingView(rootView: DeskWindow(store: store, model: model, fixture: fixture != nil))
+            let host = NSHostingView(rootView: DeskWindow(store: store, model: model, fixture: fixture != nil && !options.hideFixtureLabel))
             host.sceneBridgingOptions = [.toolbars, .title]
             window.contentView = host
         }
