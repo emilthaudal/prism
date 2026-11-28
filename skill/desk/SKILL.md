@@ -65,7 +65,7 @@ A session you started that wants permission for a tool asks it as a question, an
 
 An MCP server's approval prompt, such as a deploy tool's confirm page for a merge or a deploy, comes the same way: `TRACK asks: gatekeeper: Approve merging … D13`, with the page as its link and the options Done, continue and Decline. It is always Emil's, at any tier: he opens the page in Prism, approves there, then answers Done, continue. tracks refuses your answer. It waits up to 55 minutes.
 
-A question nobody answers in time closes with `TRACK D12 closed: timed out: answer with claude attach SHORT`: the session stays blocked on its own prompt, so tell Emil he can answer it by taking the session over. One also closes when Emil takes its session over (`closed: the session is Emil's now`).
+A question nobody answers in time closes with `TRACK D12 closed: timed out: answer with claude attach SHORT`: the session stays blocked on its own prompt, so tell Emil he can answer it by taking the session over. One also closes when Emil takes its session over (`closed: the session is Emil's now`), and so do the open asks on that session's card.
 
 A session blocked on `permission: …` or `approval in …` with no D id lost its hooks: a session resumed outside tracks (after an error, from the fleet) runs without the settings tracks started it with. Tell Emil it needs claude attach SHORT.
 

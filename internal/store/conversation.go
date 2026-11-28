@@ -210,9 +210,24 @@ func (s *Store) DeskSessionStart(id string) (time.Time, error) {
 	return t, err
 }
 
-// SetOwner gives a session to emil or the desk.
+// SetOwner gives a session to emil or the desk. Given to Emil, its open questions close.
 func (s *Store) SetOwner(id, owner string) error {
-	return s.sessionUpdate(id, `UPDATE sessions SET owner = ? WHERE id = ?`, owner, id)
+	if err := s.sessionUpdate(id, `UPDATE sessions SET owner = ? WHERE id = ?`, owner, id); err != nil || owner != "emil" {
+		return err
+	}
+	return s.tx(func(tx *wtx) error { return closeForEmil(tx, id, s.now()) })
+}
+
+// EmilsNowNote is why a question closes when Emil takes its session over.
+const EmilsNowNote = "closed: the session is Emil's now, answer it there"
+
+// closeForEmil closes the unanswered questions of a session Emil took over: its own prompts and
+// the asks on its track's card. Only the session takes his answer now, so none can be sent.
+func closeForEmil(tx *wtx, id string, now time.Time) error {
+	_, err := tx.Exec(`UPDATE questions SET closed_at = ?, answer_text = ? WHERE closed_at IS NULL AND answered_at IS NULL
+		AND (session_id = ? OR ask_id IS NOT NULL AND track_id = (SELECT track_id FROM sessions WHERE id = ?))`,
+		fmtTime(now), EmilsNowNote, id, id)
+	return err
 }
 
 // MarkSeen stamps seen_at on a session, now.

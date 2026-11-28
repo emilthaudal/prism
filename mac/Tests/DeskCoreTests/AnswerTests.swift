@@ -179,6 +179,13 @@ private let d15 = Question(id: "D15", question: "Allow?", options: [Option(label
         await store.takeOver("abc-session")
         #expect(store.notice?.command == "claude attach abc")
     }
+
+    @Test func openingABackgroundTrackWithoutRexShowsTheCommand() async throws {
+        let clock = TestClock()
+        let (store, _) = try await store(clock)
+        await store.open("7")
+        #expect(store.notice?.command == "claude attach abc")
+    }
 }
 
 @Suite struct QueuedBoardTests {
